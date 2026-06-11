@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "travelmate-498118",
+  "private_key_id": "2c3cd38036482c462ea94d875c3fecd18b9e2b62",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD2sg5fzGOSCn/0\nUmYIaeMvK2O/lhODJ7/LnM42buV0MSclnXYN6j0zcAzXpkyqrcD9RWx768Wm1CuK\nAeRgExFQhkOYS4dBmUlhW7Vas7AOsf+3TSo8WTM7d3WcMXj/imXB+3MQZFzF6Vud\ni+iGyq6pVNmX089LegvyxoTKz6KMA5DjFoy6X7DoKfg8YAoixPWBuEwX4zBPKEF6\nBMhz2cO8uqVlhRTChC4Qtzj2ko0QCj5zZmF4gtJmN7Kl5MezZ283kgigjZc5UNrc\nmhfWs5VdSbVWBv8fu5btOPJ4dmlOnIS8q/d7cPMTP3WlL1algo/jIv9CKm72+ikf\n6oH8D80rAgMBAAECggEAJrDFVVwCb8iqycBUlVQ6F89HzSf19nd4+q+knd/lp8P/\nvkQEXGlU4OjdcsL3ujsXDgHh4kuXi7MyAuqKDVFgQU9VcaDC3VRzsEvIVSniXmOn\nVfHJwn5A7T4umWke74EetX5AzRzYege/4SUsuls2aoNOvyOumslQ72oYMJDBDxE/\nR40tJfWwrXH8Slb8b7tpZkmnFlf0YIDIZxy4rs37HUl+/g5f/8vaiIDXdhdxsKab\n0IUX1zFjlShu2H0skB3786YTDNYxfjqKg4Cl9CYAkc6ZkHNtO0f8KtsBcW9zWJ0D\n+C9YoSx8yvz9BeQbPo/5EOqXoceSzvd1FOjELgXTwQKBgQD7i0o4TEcF1HB2l7ni\nPXP76Q/ZYwH/8UPajfHN3ASfqsaElQsjgzislFkThP3sFAfa9odT3f7zAh7Izorc\nvSAd21BU+T5RXlK5GDZqp/ahJewBxwtIpp+KebU34vrW/+U3QRUWUjsXSTPEkJJB\nc8dipnGkgb7uNsxl/ZpsBp7/wQKBgQD7EMdeU7Mb8wS+HsIOeTBrSfPeHYXNULNG\nztsbSDPvv2YUi/Ml1S9g2X7pVXayZD9ZCU7fq0vZ8qLR4hw8ZghA0boRuiH/UpRp\nLC69NwITfa9Vz0qsgV+CP/Q/kqiR/puxIMw++5Q6xS6SorBOn8ZE8DBgLzXzutrJ\nFwi24kzH6wKBgAf22gu8RodluYXXuffy0ChKscjFPLv4zJgv5FcLP0463vw1p9ug\n/Pth2wwmKs/9tl31bkV2gur4xza+a2Efz9OCLSHznkh/PwlDPf3UgZeKltVbkvzi\n4axFvDofwqdqBLziH6PMSLitBamUljziSI7UDEcUIJJ0Q7Z6+BexgflBAoGANBHO\nx2lkhC9qlGOcq5PGzvmPckl9Lo/GHrFYD9hxrQ9tBGXiD76fDN8OyyXGcEkKOlUL\n3qeQG6uOySiz4nLm00qr5HFOC738ubNIHkYCUDiI3KsZOZ27STAqX+TywRSlBZ9f\nvNBAdc/fUNoc5rGMVU/bOJeSAPKH3ZzBWeylL/ECgYEAih3AGAAHiHDf8XPHYcnP\nhZwqGXnkM2xdAN3cUSVwmWuz5D8VRbaJRVREpvLdgWoQHm3Nq9b5DzLswGWMhRJK\npWe98zKjd49iWnQeprjPHIJUVrBbfCHtJCVVp68aUwho7NY9DS/3w+lWBM2yFam3\nuTDd3t8yUKZZT98BA1iYQDQ=\n-----END PRIVATE KEY-----\n",
+  "client_email": "travelmate-firestore@travelmate-498118.iam.gserviceaccount.com",
+  "client_id": "110689903698463304504",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/travelmate-firestore%40travelmate-498118.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

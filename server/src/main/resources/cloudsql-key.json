@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "travelmate-498118",
+  "private_key_id": "f94df1f6b69b7467e2f75e5aaa2bccd78ec882ac",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPPhXDfSBfxEQi\nG7R/D/jixLw8z7DYWBJqz2Y1rYghTmxIjX5Fg4rlJk//GeSx6acSwBF8DcQvWVFY\nctnCXAcbwJ4103a4wcsA4Oqof7BjdlOw9h4xYXvMMags/1TY0Bn806l+nBi3KCGn\nG6HQ+BdS8PxpHMT1ZyjP5z/EbpvLp/SKbgvOqDsGFoXORqnGIBDpmStH6H1qBs1p\n6ySAmW6sUxfWZgWfW4chEy+Avv72s6HIqF0NqQ4VZA8NrJ8Jc059eTZvKBoZ0RD3\npmGm9HblRuo2K2taQIZ5zSdyxAwCsPO2TE1lrcsD4cMukhJ1mSv2J5eZecY5ETiV\nGmKGoM/JAgMBAAECggEAV2nNjj5p+Fr1jhl3gZzAEw5+g3vrEOXdJtZCO2PtpnbI\nr7WWzEVWwZ7uYSCP2Qc/5GXFOjkoRfx7lj4jYZqlmOwfD38ZdYawVLeJ4vaw9NMF\nLAAz7go7SH6tfAVayXTFcWHp/TBkMGUqBK1gDJ+IXwCsxr1Oyl/v0/mraPRqnHSB\nhzWxOPbULR/Ga8dKKsw7vWeegl04qIP9bETYsp6quiDLv3Wa/zZrWBZ9HDPmehqV\nTOBxbevQ5NB2o2VcT5mjISTJItY0+E0h9aDEVJdGiFIv7q0218eE+/yZxmXeLLP1\nwRWaqwgsYvvTs57Pr7jQ12dnl0X395lcmoibfO6znQKBgQD5CJRWaBi+XMZsxt8X\nEYKUhleI1EDv2Hj5LdBgma9rAvelp9K3jLEdrztvKLBPzue7FmlXu+PwfQ9hRigp\nTSO+fg3biXx6+jy+fbC1r3XEqB3XXNpHsTRl41KICD+d8/PO1m9YJ/MwJ5ywuhP3\nT1AgNZPOCilrz6wlDm2x0Iud7wKBgQDVCjmS42gbsMlysCtUyT6tPhRlTU62cIOm\n31EXFrJ5KCvt59ispbKaSDwltS9qUaMHZtF4aTKn2H8ZVk/QcAKr5MkjUQd7icOp\nYhskUY1H9HSYHXBj4C8Bk9ftyDkFp133FobveZV0l8FkzvLbFjQl5NKC/paMf7ON\nMntBVZKlxwKBgBQXDBh4Z16cD2nhFUhAIl+nAtLIBMEUnpXDi2bvnwYsBBx6EHa8\nQ+GYLFxIVQjrMSiXo0Hvp3DUNfRr+3txfKu2cZm/Wqp1G4dmjmXp1L9brKSeGgHk\nmsyJbTQKLk+oyYdrJypedrDw0SQ0rr2pyVX/3H+ntDW9WC7ZHiJVJ55DAoGBAK2n\nmQin/5vavkqTWa7SIBn9aYitvISwMFBc5m+om7Bw02Yov5DzvCNQ0F54U38ZroeB\nAyxgq97vdaMEnSittS/C3UXBbhUAVhKDGta+9yf5FvVLwepXullR1whHVlvKcqjP\nnwwjknUooob2vjVh4v4kiIgo2DUMfyKQTLIT++bPAoGALt1+YzU8crONf6iI6PcE\nUAZ6qXEx91peSOYVafm4liPkVUBLHlg3BckDJSDfee2zzOZx9UdmjA03AxJ5gGJR\nX9yl25Z4QAlv1ns55nJMjPI9rrGqJJxqzSzzBV5UMqTzcj29IkB3Ar+SCg0eDtYq\n3alpp9JWaLDEdnAvWErJ+7M=\n-----END PRIVATE KEY-----\n",
+  "client_email": "travelmate-sql@travelmate-498118.iam.gserviceaccount.com",
+  "client_id": "105610361296484333804",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/travelmate-sql%40travelmate-498118.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
