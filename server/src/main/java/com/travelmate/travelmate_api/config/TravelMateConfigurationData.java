@@ -9,16 +9,16 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.google.cloud.firestore.Firestore;
-import com.travelmate.travelmate_api.models.sql.User;
-import com.travelmate.travelmate_api.repository.sql.UserRepository;
+import com.travelmate.travelmate_api.models.sql.UserSQL;
+import com.travelmate.travelmate_api.repository.sql.UserSQLRepository;
 
 @Component
 public class TravelMateConfigurationData implements CommandLineRunner {
 	
-	private final UserRepository userRepository;
+	private final UserSQLRepository userRepository;
     private final Firestore firestore;
 
-    public TravelMateConfigurationData(UserRepository userRepository, Firestore firestore) {
+    public TravelMateConfigurationData(UserSQLRepository userRepository, Firestore firestore) {
         this.userRepository = userRepository;
         this.firestore = firestore;
     }
@@ -38,11 +38,11 @@ public class TravelMateConfigurationData implements CommandLineRunner {
         // ==========================================
         // 1. GENERATE 10 USERS (MySQL)
         // ==========================================
-        List<User> users = new ArrayList<>();
+        List<UserSQL> users = new ArrayList<>();
         String[] names = {"Siddharth", "John", "Emma", "Niklas", "Sarah", "David", "Anna", "Michael", "Laura", "Daniel"};
         
         for (int i = 0; i < names.length; i++) {
-            User u = new User(names[i], names[i].toLowerCase() + "@example.com");
+            UserSQL u = new UserSQL(names[i], names[i].toLowerCase() + "@example.com");
             users.add(userRepository.save(u));
         }
         System.out.println("✅ 10 Users successfully inserted into MySQL.");

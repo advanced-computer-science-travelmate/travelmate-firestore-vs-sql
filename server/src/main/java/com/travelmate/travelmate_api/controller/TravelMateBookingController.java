@@ -1,54 +1,86 @@
 package com.travelmate.travelmate_api.controller;
 
+import com.travelmate.travelmate_api.models.sql.BookingsSQL;
+//import com.travelmate.travelmate_api.models.firestore.BookingDoc;
+import com.travelmate.travelmate_api.repository.sql.BookingSQLRepository;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.SetOptions;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.travelmate.travelmate_api.models.sql.Bookings;
-import com.travelmate.travelmate_api.service.TravelMateService;
 
 @RestController
 @RequestMapping("/api/travel/bookings")
-@CrossOrigin(origins = "http://localhost:3000") // Ready for your React frontend!
+@CrossOrigin(origins = "http://localhost:5173")
 public class TravelMateBookingController {
 
-	    private final TravelMateService travelService;
+    private final BookingSQLRepository bookingSqlRepository;
+    private final Firestore firestore;
 
-	    public TravelMateBookingController(TravelMateService travelService) {
-	        this.travelService = travelService;
-	    }
+    public TravelMateBookingController(BookingSQLRepository bookingSqlRepository, Firestore firestore) {
+        this.bookingSqlRepository = bookingSqlRepository;
+        this.firestore = firestore;
+    }
 
-	 // CREATE a manual booking straight to SQL & Firestore timeline
-	    @PostMapping("/book")
-	    public String bookTrip(@RequestParam Long userId,
-	                           @RequestParam String itineraryId,
-	                           @RequestParam String type,
-	                           @RequestParam Double price) {
-	        try {
-	            return travelService.executeHybridBooking(userId, itineraryId, type, price);
-	        } catch (Exception e) {
-	            return "Booking failed: " + e.getMessage();
-	        }
-	    }
+    // ==========================================
+    // CLOUD SQL PATHS (Relational)
+    // ==========================================
 
-	    // READ all SQL bookings for a specific user
-	    @GetMapping("/bookings/{userId}")
-	    public List<Bookings> getUserBookings(@PathVariable Long userId) {
-	        return travelService.getUserBookings(userId);
-	    }
+    @PostMapping("/sql")
+    public ResponseEntity<BookingsSQL> createBookingSQL(@RequestBody BookingsSQL booking) {
+        return ResponseEntity.ok(bookingSqlRepository.save(booking));
+    }
 
-	    // UPDATE a booking's core data status in MySQL
-	    // Endpoint: PUT http://localhost:8080/api/travel/booking/1?newType=HOTEL_PAID
-	    @PutMapping("/{bookingId}")
-	    public String updateBooking(@PathVariable Long bookingId, @RequestParam String newType) {
-	        return travelService.updateBookingType(bookingId, newType);
-	    }
+    @GetMapping("/sql")
+    public ResponseEntity<List<BookingsSQL>> getAllBookingsSQL() {
+        return ResponseEntity.ok(bookingSqlRepository.findAll());
+    }
+
+    @PutMapping("/sql/{id}")
+    public ResponseEntity<BookingsSQL> updateBookingSQL(@PathVariable Long id, @RequestBody BookingsSQL details) {
+        return bookingSqlRepository.findById(id).map(booking -> {
+            booking.setType(details.getType());
+            booking.setPrice(details.getPrice());
+            booking.setConfirmationNumber(details.getConfirmationNumber());
+            return ResponseEntity.ok(bookingSqlRepository.save(booking));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/sql/{id}")
+    public ResponseEntity<Void> deleteBookingSQL(@PathVariable Long id) {
+        if (bookingSqlRepository.existsById(id)) {
+            bookingSqlRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    // ==========================================
+    // CLOUD FIRESTORE PATHS (NoSQL)
+    // ==========================================
+
+//    @PostMapping("/firestore")
+//    public ResponseEntity<String> createBookingNoSQL(@RequestBody BookingDoc booking) throws Exception {
+//        firestore.collection("bookings").document(booking.getBookingId()).set(booking).get();
+//        return ResponseEntity.ok("Booking recorded in Firestore");
+//    }
+//
+//    @GetMapping("/firestore/{id}")
+//    public ResponseEntity<BookingDoc> getBookingNoSQL(@PathVariable String id) throws Exception {
+//        var doc = firestore.collection("bookings").document(id).get().get();
+//        return doc.exists() ? ResponseEntity.ok(doc.toObject(BookingDoc.class)) : ResponseEntity.notFound().build();
+//    }
+//
+//    @PutMapping("/firestore/{id}")
+//    public ResponseEntity<String> updateBookingNoSQL(@PathVariable String id, @RequestBody BookingDoc booking) throws Exception {
+//        firestore.collection("bookings").document(id).set(booking, SetOptions.merge()).get();
+//        return ResponseEntity.ok("Booking updated in Firestore");
+//    }
+//
+//    @DeleteMapping("/firestore/{id}")
+//    public ResponseEntity<String> deleteBookingNoSQL(@PathVariable String id) throws Exception {
+//        firestore.collection("bookings").document(id).delete().get();
+//        return ResponseEntity.ok("Booking document dropped from Firestore");
+//    }
 }
