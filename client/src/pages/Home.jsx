@@ -4,7 +4,6 @@ import Hero from "../components/Hero";
 import DestinationCards from "../components/DestinationCards";
 import TripCards from "../components/TripCards";
 import DatabaseComparison from "../components/DatabaseComparison";
-import Footer from "../components/Footer";
 import LoginModal from "../components/LoginModal";
 
 function Home() {
@@ -17,7 +16,6 @@ function Home() {
       <DestinationCards />
       <TripCards />
       <DatabaseComparison />
-      <Footer />
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
