@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDate;
+import com.travelmate.travelmate_api.models.nosql.UserDoc;
+import com.travelmate.travelmate_api.models.nosql.BookingDoc;
+import com.travelmate.travelmate_api.models.nosql.BudgetDoc;
+import com.travelmate.travelmate_api.models.nosql.ItineraryDoc;
+import com.travelmate.travelmate_api.models.nosql.ProposalDoc;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
