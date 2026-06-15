@@ -40,7 +40,7 @@ public class TravelMateBookingController {
     @PutMapping("/sql/{id}")
     public ResponseEntity<BookingsSQL> updateBookingSQL(@PathVariable Long id, @RequestBody BookingsSQL details) {
         return bookingSqlRepository.findById(id).map(booking -> {
-            booking.setType(details.getType());
+            booking.setBookingType(details.getBookingType());
             booking.setPrice(details.getPrice());
             booking.setConfirmationNumber(details.getConfirmationNumber());
             return ResponseEntity.ok(bookingSqlRepository.save(booking));

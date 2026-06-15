@@ -124,7 +124,7 @@ public class TravelMateService {
         // Update SQL
         BookingsSQL booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found!"));
-        booking.setBookingType(newType);
+        booking.setBookingType(newType);	// Booking Type
         bookingRepository.save(booking); 
         
         // Update Firestore Document
