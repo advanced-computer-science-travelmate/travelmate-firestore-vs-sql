@@ -44,27 +44,55 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
   function handleAddToTrip(e) {
     e.preventDefault();
 
-    const savedTrips = localStorage.getItem("trips");
-    const trips = savedTrips ? JSON.parse(savedTrips) : [];
+    const cachedUserSqlId = localStorage.getItem("user_sql_id");
+    const cachedUserNoSqlId = localStorage.getItem("user_nosql_id");
 
-    const newTrip = {
-      id: Date.now(),
-      destination: destination.name,
-      startDate,
-      endDate,
-      image: destination.image,
+    if (!cachedUserSqlId) {
+      alert("Please log in first to save this trip!");
+      return;
+    }
+
+    setMessage("Synchronizing data across cloud engines...");
+
+    // Build payload structural objects matching your Java ItinerarySQL model variables
+    const sqlPayload = {
+      destination: destination.name, // Sends the text name string to the destination column
+      startDate: startDate,          // Formatted for your backend LocalDate parser
+      endDate: endDate,
+      maxTravelers: 2,
+      activities: destination.famousPlaces || []
     };
 
-    localStorage.setItem("trips", JSON.stringify([...trips, newTrip]));
+    // Build document payload structure matching your Java ItineraryDoc NoSQL model variables
+    const noSqlPayload = {
+      itineraryId: "ITIN-" + Date.now(),
+      destination: destination.name,
+      startDate: startDate,
+      endDate: endDate,
+      maxTravelers: 2,
+      activities: destination.famousPlaces || []
+    };
 
-    setMessage("Trip added successfully!");
-    setShowDateForm(false);
-    setStartDate("");
-    setEndDate("");
+    // Execute dual-writes directly to your Itinerary Controller paths
+    const saveToSql = axios.post("http://localhost:8080/api/travel/itineraries/sql", sqlPayload);
+    const saveToFirestore = axios.post("http://localhost:8080/api/travel/itineraries/firestore", noSqlPayload);
 
-    setTimeout(() => {
-      navigate("/trips");
-    }, 800);
+    Promise.all([saveToSql, saveToFirestore])
+      .then(([sqlResponse, firestoreResponse]) => {
+        setMessage("🚀 Complete! Successfully persisted data to itineraries table and Firestore clusters.");
+        
+        setShowDateForm(false);
+        setStartDate("");
+        setEndDate("");
+
+        setTimeout(() => {
+          navigate("/trips");
+        }, 1000);
+      })
+      .catch(err => {
+        console.error("Multi-cloud sync failure:", err);
+        setMessage("Synchronization failed. Check your Cloud SQL connection status.");
+      });
   }
 
  return (

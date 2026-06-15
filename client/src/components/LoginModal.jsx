@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios"; // Added Axios import for API orchestration
 
-function LoginModal({ onClose }) {
+function LoginModal({ onClose, onLoginSuccess }) {
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added to prevent multiple double-clicks
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -31,13 +33,13 @@ function LoginModal({ onClose }) {
     setError("");
     setSuccess("");
 
+    // --- Validation Rules Block ---
     if (!formData.email || !formData.password) {
       setError("Please enter your email and password.");
       return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (!emailPattern.test(formData.email)) {
       setError("Please enter a valid email address.");
       return;
@@ -58,11 +60,42 @@ function LoginModal({ onClose }) {
       return;
     }
 
-    if (isSignup) {
-      setSuccess("Account created successfully. Backend connection pending.");
-    } else {
-      setSuccess("Login successful. Backend connection pending.");
-    }
+    // --- Live Ingestion Integration Phase ---
+    setIsSubmitting(true);
+
+    // If logging in, create a generic display name out of the email username fragment
+    const derivedName = isSignup 
+      ? formData.fullName 
+      : formData.email.split("@")[0].charAt(0).toUpperCase() + formData.email.split("@")[0].slice(1);
+
+    // Target your dynamic Spring Boot mapping endpoint
+    axios.post("http://localhost:8080/api/users/mock-login", {
+      name: derivedName,
+      email: formData.email
+    })
+    .then(response => {
+      const sessionData = response.data;
+      
+      // Store synchronized cloud identities into browser local storage cache
+      localStorage.setItem("user_sql_id", sessionData.sqlId);
+      localStorage.setItem("user_nosql_id", sessionData.noSqlId);
+      localStorage.setItem("user_name", sessionData.name);
+      localStorage.setItem("user_email", sessionData.email);
+
+      setSuccess(isSignup ? "Account verified and synced!" : "Login successful! Synced.");
+      
+      // Delayed execute so user sees the green success alert block before it closes
+      setTimeout(() => {
+        setIsSubmitting(false);
+        if (onLoginSuccess) onLoginSuccess(sessionData); 
+        onClose();
+      }, 1200);
+    })
+    .catch(err => {
+      console.error("Multi-Cloud connection failed:", err);
+      setError("Database connection failed. Is your Cloud SQL instance turned on?");
+      setIsSubmitting(false);
+    });
   }
 
   return (
@@ -70,7 +103,8 @@ function LoginModal({ onClose }) {
       <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden grid md:grid-cols-2">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white shadow flex items-center justify-center text-slate-700 hover:bg-slate-100"
+          disabled={isSubmitting}
+          className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white shadow flex items-center justify-center text-slate-700 hover:bg-slate-100 disabled:opacity-50"
         >
           ✕
         </button>
@@ -134,7 +168,8 @@ function LoginModal({ onClose }) {
                   onChange={handleChange}
                   type="text"
                   placeholder="Enter your name"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
                 />
               </div>
             )}
@@ -149,7 +184,8 @@ function LoginModal({ onClose }) {
                 onChange={handleChange}
                 type="email"
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
               />
             </div>
 
@@ -165,12 +201,14 @@ function LoginModal({ onClose }) {
                   onChange={handleChange}
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
                 />
 
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isSubmitting}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -191,12 +229,14 @@ function LoginModal({ onClose }) {
                     onChange={handleChange}
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
-                    className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isSubmitting}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
                   >
                     {showConfirmPassword ? (
@@ -212,11 +252,11 @@ function LoginModal({ onClose }) {
             {!isSignup && (
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 text-slate-600">
-                  <input type="checkbox" />
+                  <input type="checkbox" disabled={isSubmitting} />
                   Remember me
                 </label>
 
-                <button type="button" className="text-blue-600 font-semibold">
+                <button type="button" disabled={isSubmitting} className="text-blue-600 font-semibold disabled:opacity-50">
                   Forgot password?
                 </button>
               </div>
@@ -224,9 +264,10 @@ function LoginModal({ onClose }) {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:bg-blue-400 flex items-center justify-center"
             >
-              {isSignup ? "Create Account" : "Login"}
+              {isSubmitting ? "Connecting to Multi-Cloud Clusters..." : (isSignup ? "Create Account" : "Login")}
             </button>
           </form>
 
@@ -234,11 +275,13 @@ function LoginModal({ onClose }) {
             {isSignup ? "Already have an account?" : "Don’t have an account?"}{" "}
             <button
               onClick={() => {
+                if (isSubmitting) return;
                 setIsSignup(!isSignup);
                 setError("");
                 setSuccess("");
               }}
-              className="text-blue-600 font-semibold"
+              disabled={isSubmitting}
+              className="text-blue-600 font-semibold disabled:opacity-50"
             >
               {isSignup ? "Login" : "Sign up"}
             </button>
