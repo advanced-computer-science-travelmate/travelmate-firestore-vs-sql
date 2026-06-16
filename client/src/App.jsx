@@ -8,6 +8,7 @@ import Destinations from "./pages/Destinations";
 import CompareDB from "./pages/CompareDB";
 import DestinationDetails from "./pages/DestinationDetails";
 
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("isLoggedIn") === "true"

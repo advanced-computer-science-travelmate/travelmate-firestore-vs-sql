@@ -1,29 +1,94 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { destinations } from "../Data/destinations";
+import { getEuropeanDestinations } from "../services/destinationService";
+import HotelCards from "../components/HotelCards";
 
 function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
   const { destinationId } = useParams();
   const navigate = useNavigate();
+
+  const [destination, setDestination] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [showDateForm, setShowDateForm] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [message, setMessage] = useState("");
 
-  const destination = destinations.find(
-    (item) => item.id === Number(destinationId),
-  );
+  useEffect(() => {
+    async function loadDestination() {
+      try {
+        const data = await getEuropeanDestinations();
+
+        const selectedDestination = data.find(
+          (item) => item.id === Number(destinationId)
+        );
+
+        setDestination(selectedDestination);
+      } catch (error) {
+        console.error("Failed to load destination:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDestination();
+  }, [destinationId]);
+
+  function handleAddToTrip(e) {
+    e.preventDefault();
+
+    const savedTrips = localStorage.getItem("trips");
+    const trips = savedTrips ? JSON.parse(savedTrips) : [];
+
+    const newTrip = {
+      id: Date.now(),
+      destination: destination.name,
+      startDate,
+      endDate,
+      image: destination.image,
+    };
+
+    localStorage.setItem("trips", JSON.stringify([...trips, newTrip]));
+
+    setMessage("Trip added successfully!");
+    setShowDateForm(false);
+    setStartDate("");
+    setEndDate("");
+
+    setTimeout(() => {
+      navigate("/trips");
+    }, 800);
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Navbar
+          isLoggedIn={isLoggedIn}
+          onLoginClick={onLogin}
+          onLogout={onLogout}
+        />
+
+        <main className="min-h-screen bg-slate-50 px-6 py-16">
+          <section className="max-w-7xl mx-auto">
+            <p className="text-slate-600">Loading destination...</p>
+          </section>
+        </main>
+      </>
+    );
+  }
 
   if (!destination) {
-   return (
-  <>
-    <Navbar
-      isLoggedIn={isLoggedIn}
-      onLoginClick={onLogin}
-      onLogout={onLogout}
-    />
+    return (
+      <>
+        <Navbar
+          isLoggedIn={isLoggedIn}
+          onLoginClick={onLogin}
+          onLogout={onLogout}
+        />
+
         <main className="min-h-screen bg-slate-50 px-6 py-16">
           <section className="max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-slate-900">
@@ -41,67 +106,14 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
       </>
     );
   }
-  function handleAddToTrip(e) {
-    e.preventDefault();
 
-    const cachedUserSqlId = localStorage.getItem("user_sql_id");
-    const cachedUserNoSqlId = localStorage.getItem("user_nosql_id");
-
-    if (!cachedUserSqlId) {
-      alert("Please log in first to save this trip!");
-      return;
-    }
-
-    setMessage("Synchronizing data across cloud engines...");
-
-    // Build payload structural objects matching your Java ItinerarySQL model variables
-    const sqlPayload = {
-      destination: destination.name, // Sends the text name string to the destination column
-      startDate: startDate,          // Formatted for your backend LocalDate parser
-      endDate: endDate,
-      maxTravelers: 2,
-      activities: destination.famousPlaces || []
-    };
-
-    // Build document payload structure matching your Java ItineraryDoc NoSQL model variables
-    const noSqlPayload = {
-      itineraryId: "ITIN-" + Date.now(),
-      destination: destination.name,
-      startDate: startDate,
-      endDate: endDate,
-      maxTravelers: 2,
-      activities: destination.famousPlaces || []
-    };
-
-    // Execute dual-writes directly to your Itinerary Controller paths
-    const saveToSql = axios.post("http://localhost:8080/api/travel/itineraries/sql", sqlPayload);
-    const saveToFirestore = axios.post("http://localhost:8080/api/travel/itineraries/firestore", noSqlPayload);
-
-    Promise.all([saveToSql, saveToFirestore])
-      .then(([sqlResponse, firestoreResponse]) => {
-        setMessage("🚀 Complete! Successfully persisted data to itineraries table and Firestore clusters.");
-        
-        setShowDateForm(false);
-        setStartDate("");
-        setEndDate("");
-
-        setTimeout(() => {
-          navigate("/trips");
-        }, 1000);
-      })
-      .catch(err => {
-        console.error("Multi-cloud sync failure:", err);
-        setMessage("Synchronization failed. Check your Cloud SQL connection status.");
-      });
-  }
-
- return (
-  <>
-    <Navbar
-      isLoggedIn={isLoggedIn}
-      onLoginClick={onLogin}
-      onLogout={onLogout}
-    />
+  return (
+    <>
+      <Navbar
+        isLoggedIn={isLoggedIn}
+        onLoginClick={onLogin}
+        onLogout={onLogout}
+      />
 
       <main className="min-h-screen bg-slate-50">
         <section className="max-w-7xl mx-auto px-6 py-12">
@@ -135,7 +147,7 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
                   </h2>
 
                   <div className="flex flex-wrap gap-3 mt-4">
-                    {destination.famousCities.map((city) => (
+                    {destination.famousCities?.map((city) => (
                       <span
                         key={city}
                         className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-sm font-semibold"
@@ -152,7 +164,7 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
                   </h2>
 
                   <div className="flex flex-wrap gap-3 mt-4">
-                    {destination.famousPlaces.map((place) => (
+                    {destination.famousPlaces?.map((place) => (
                       <span
                         key={place}
                         className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold"
@@ -163,6 +175,8 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
                   </div>
                 </div>
               </div>
+              {/* Hotels Section */}
+              <HotelCards destination={destination.name} />
 
               {message && (
                 <p className="mt-8 bg-green-50 text-green-700 px-5 py-3 rounded-xl font-semibold">

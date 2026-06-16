@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
+import { getEuropeanDestinations } from "../services/destinationService";
+import VotingPoll from "../components/VotingPoll";
 
 function Trips({ isLoggedIn, onLogin, onLogout }) {
+  const [destinations, setDestinations] = useState([]);
+  const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
+
   const [trips, setTrips] = useState(() => {
     const savedTrips = localStorage.getItem("trips");
     return savedTrips ? JSON.parse(savedTrips) : [];
@@ -11,6 +16,22 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [showVoting, setShowVoting] = useState(false);
+
+  useEffect(() => {
+    async function loadDestinations() {
+      try {
+        const data = await getEuropeanDestinations();
+        setDestinations(data);
+      } catch (error) {
+        console.error("Failed to load destinations:", error);
+      } finally {
+        setIsLoadingDestinations(false);
+      }
+    }
+
+    loadDestinations();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("trips", JSON.stringify(trips));
@@ -19,11 +40,16 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   function handleCreateTrip(e) {
     e.preventDefault();
 
+    const selectedDestination = destinations.find(
+      (item) => item.name === destination,
+    );
+
     const newTrip = {
       id: Date.now(),
       destination,
       startDate,
       endDate,
+      image: selectedDestination?.image || "",
     };
 
     setTrips([...trips, newTrip]);
@@ -78,12 +104,21 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
-                >
-                  Plan a new trip
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowForm(true)}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+                  >
+                    Plan a new trip
+                  </button>
+
+                  <button
+                    onClick={() => setShowVoting((prev) => !prev)}
+                    className="border border-blue-600 text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition"
+                  >
+                    Start Group Vote
+                  </button>
+                </div>
               </div>
 
               {showForm && (
@@ -100,14 +135,26 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
                         Where to?
                       </label>
-                      <input
-                        type="text"
+
+                      <select
                         value={destination}
                         onChange={(e) => setDestination(e.target.value)}
-                        placeholder="Germany, Paris, Bali..."
                         required
-                        className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                        disabled={isLoadingDestinations}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="">
+                          {isLoadingDestinations
+                            ? "Loading destinations..."
+                            : "Select a destination"}
+                        </option>
+
+                        {destinations.map((destination) => (
+                          <option key={destination.id} value={destination.name}>
+                            {destination.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -140,7 +187,8 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                   <div className="flex gap-4 mt-8">
                     <button
                       type="submit"
-                      className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+                      disabled={isLoadingDestinations}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:bg-slate-400"
                     >
                       Create Trip
                     </button>
@@ -155,6 +203,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                   </div>
                 </form>
               )}
+              {showVoting && <VotingPoll />}
 
               {trips.length === 0 ? (
                 <div className="bg-white rounded-3xl shadow-sm p-12 text-center">
@@ -178,27 +227,37 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                   {trips.map((trip) => (
                     <div
                       key={trip.id}
-                      className="bg-white rounded-3xl shadow-sm p-6"
+                      className="bg-white rounded-3xl shadow-sm overflow-hidden"
                     >
-                      <h3 className="text-2xl font-bold text-slate-900">
-                        {trip.destination}
-                      </h3>
+                      {trip.image && (
+                        <img
+                          src={trip.image}
+                          alt={trip.destination}
+                          className="h-40 w-full object-cover"
+                        />
+                      )}
 
-                      <p className="text-slate-600 mt-4">
-                        📅 {trip.startDate} to {trip.endDate}
-                      </p>
+                      <div className="p-6">
+                        <h3 className="text-2xl font-bold text-slate-900">
+                          {trip.destination}
+                        </h3>
 
-                      <div className="flex gap-3 mt-6">
-                        <button className="border border-blue-600 text-blue-600 px-5 py-2 rounded-xl font-semibold hover:bg-blue-50 transition">
-                          View Itinerary
-                        </button>
+                        <p className="text-slate-600 mt-4">
+                          📅 {trip.startDate} to {trip.endDate}
+                        </p>
 
-                        <button
-                          onClick={() => handleDeleteTrip(trip.id)}
-                          className="border border-red-500 text-red-500 px-5 py-2 rounded-xl font-semibold hover:bg-red-50 transition"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex gap-3 mt-6">
+                          <button className="border border-blue-600 text-blue-600 px-5 py-2 rounded-xl font-semibold hover:bg-blue-50 transition">
+                            View Itinerary
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteTrip(trip.id)}
+                            className="border border-red-500 text-red-500 px-5 py-2 rounded-xl font-semibold hover:bg-red-50 transition"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
