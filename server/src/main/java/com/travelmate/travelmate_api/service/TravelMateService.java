@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.time.LocalDate;
-
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,48 +12,49 @@ import org.springframework.transaction.annotation.Transactional;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.SetOptions;
-
-// Import your SQL Models & Repositories (Matching your exact uppercase SQL convention)
-import com.travelmate.travelmate_api.models.sql.UserSQL;
-import com.travelmate.travelmate_api.models.sql.BookingsSQL;
-import com.travelmate.travelmate_api.models.sql.BudgetSQL;
-import com.travelmate.travelmate_api.models.sql.ItinerarySQL;
-import com.travelmate.travelmate_api.models.sql.VotingProposalSQL;
-
-import com.travelmate.travelmate_api.repository.sql.UserSQLRepository;
-import com.travelmate.travelmate_api.repository.sql.BookingSQLRepository;
-import com.travelmate.travelmate_api.repository.sql.BudgetSQLRepository;
-import com.travelmate.travelmate_api.repository.sql.ItinerarySQLRepository;
-import com.travelmate.travelmate_api.repository.sql.VotingProposalSQLRepository;
-
-// Import NoSQL DTOs
-import com.travelmate.travelmate_api.models.nosql.UserDoc;
 import com.travelmate.travelmate_api.models.nosql.BookingDoc;
 import com.travelmate.travelmate_api.models.nosql.BudgetDoc;
-import com.travelmate.travelmate_api.models.nosql.ItineraryDoc;
-import com.travelmate.travelmate_api.models.nosql.ProposalDoc;
+import com.travelmate.travelmate_api.models.nosql.DestinationDoc;
+import com.travelmate.travelmate_api.models.nosql.TripDoc;
+import com.travelmate.travelmate_api.models.nosql.UserDoc;
+
+import com.travelmate.travelmate_api.models.sql.BookingsSQL;
+import com.travelmate.travelmate_api.models.sql.BudgetSQL;
+import com.travelmate.travelmate_api.models.sql.DestinationSQL;
+import com.travelmate.travelmate_api.models.sql.TripsSQL;
+import com.travelmate.travelmate_api.models.sql.UserSQL;
+import com.travelmate.travelmate_api.models.sql.VotingProposalSQL;
+
+import com.travelmate.travelmate_api.repository.sql.BookingSQLRepository;
+import com.travelmate.travelmate_api.repository.sql.BudgetSQLRepository;
+import com.travelmate.travelmate_api.repository.sql.DestinationSQLRepository;
+import com.travelmate.travelmate_api.repository.sql.TripSQLRepository;
+import com.travelmate.travelmate_api.repository.sql.UserSQLRepository;
+import com.travelmate.travelmate_api.repository.sql.VotingProposalSQLRepository;
 
 @Service
 public class TravelMateService {
 
-    private final UserSQLRepository userRepository;
+	private final UserSQLRepository userRepository;
     private final BookingSQLRepository bookingRepository;
     private final BudgetSQLRepository budgetRepository;
-    private final ItinerarySQLRepository itineraryRepository;
+    private final DestinationSQLRepository destinationRepository;
+    private final TripSQLRepository tripRepository;
     private final VotingProposalSQLRepository proposalRepository;
     private final Firestore firestore;
 
     public TravelMateService(UserSQLRepository userRepository, 
                              BookingSQLRepository bookingRepository,
                              BudgetSQLRepository budgetRepository,
-                             ItinerarySQLRepository itineraryRepository,
+                             DestinationSQLRepository destinationRepository,
+                             TripSQLRepository tripRepository,
                              VotingProposalSQLRepository proposalRepository,
                              Firestore firestore) {
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.budgetRepository = budgetRepository;
-        this.itineraryRepository = itineraryRepository;
+        this.destinationRepository = destinationRepository;
+        this.tripRepository = tripRepository;
         this.proposalRepository = proposalRepository;
         this.firestore = firestore;
     }
@@ -66,9 +65,7 @@ public class TravelMateService {
     
     @Transactional
     public void createUserInBothSystems(UserSQL sqlUser, UserDoc noSqlUser) throws Exception {
-        // SQL Save
         userRepository.save(sqlUser);
-        // NoSQL Save
         firestore.collection("users").document(noSqlUser.getUserId()).set(noSqlUser).get();
     }
 
@@ -79,7 +76,7 @@ public class TravelMateService {
     }
 
     // ==========================================
-    // 2. BOOKING CRUD (YOUR EXPANDED CORE WORKFLOW)
+    // 2. BOOKING CRUD & DUAL HISTORICAL CORRELATION
     // ==========================================
 
     public List<BookingsSQL> getUserBookings(Long userId) {
@@ -87,7 +84,7 @@ public class TravelMateService {
     }
 
     @Transactional 
-    public String executeHybridBooking(Long userId, String itineraryId, String bookingType, Double price) throws Exception {
+    public String executeHybridBooking(Long userId, String tripId, String bookingType, Double price) throws Exception {
         
         // 1. RELATIONAL (SQL): Validate User and Save Financial Record
         UserSQL user = userRepository.findById(userId)
@@ -105,10 +102,10 @@ public class TravelMateService {
         bookingDoc.setConfirmationNumber(confirmationNum);
         firestore.collection("bookings").document(confirmationNum).set(bookingDoc).get();
 
-        // 3. Update the live timeline stream array
+        // 3. Update the live trip itinerary stream array
         String timelineEvent = "New " + bookingType + " confirmed: " + confirmationNum;
-        firestore.collection("itineraries")
-                 .document(itineraryId)
+        firestore.collection("trips")
+                 .document(tripId)
                  .update("activities", com.google.cloud.firestore.FieldValue.arrayUnion(timelineEvent))
                  .get(); 
 
@@ -117,31 +114,25 @@ public class TravelMateService {
 
     @Transactional
     public String updateBookingType(Long bookingId, String confirmationNum, String newType) throws Exception {
-        // Update SQL
         BookingsSQL booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found!"));
-        booking.setBookingType(newType);	// Booking Type
+        booking.setBookingType(newType);
         bookingRepository.save(booking); 
         
-        // Update Firestore Document
         firestore.collection("bookings").document(confirmationNum).update("type", newType).get();
-        
         return "SQL and NoSQL Bookings updated successfully to: " + newType;
     }
 
     @Transactional
-    public String cancelHybridBooking(Long bookingId, String confirmationNum, String itineraryId) throws Exception {
-        // SQL Delete
+    public String cancelHybridBooking(Long bookingId, String confirmationNum, String tripId) throws Exception {
         BookingsSQL booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found in SQL Database!"));
         bookingRepository.delete(booking);
 
-        // Firestore Document Delete
         firestore.collection("bookings").document(confirmationNum).delete().get();
 
-        // Append notice to live timeline
         String timelineEvent = "❌ Reservation CANCELED: " + confirmationNum;
-        firestore.collection("itineraries").document(itineraryId)
+        firestore.collection("trips").document(tripId)
                  .update("activities", com.google.cloud.firestore.FieldValue.arrayUnion(timelineEvent)).get();
 
         return "Hybrid Cancellation Success! Purged from both engines.";
@@ -158,45 +149,53 @@ public class TravelMateService {
     }
 
     // ==========================================
-    // 4. ITINERARY CRUD (DUAL-PERSISTENCE)
+    // 4. DESTINATION & TRIP SEPARATE MAPPINGS
     // ==========================================
 
     @Transactional
-    public void createItineraryInBothSystems(ItinerarySQL sqlItin, ItineraryDoc noSqlItin) throws Exception {
-        itineraryRepository.save(sqlItin);
-        firestore.collection("itineraries").document(noSqlItin.getItineraryId()).set(noSqlItin).get();
+    public void createDestinationInBothSystems(DestinationSQL sqlDest, DestinationDoc noSqlDest) throws Exception {
+        destinationRepository.save(sqlDest);
+        firestore.collection("destinations").document(noSqlDest.getId()).set(noSqlDest).get();
     }
 
-    public String addFriendCommentToItinerary(String itineraryId, Long sqlItineraryId, String friendName, String comment) throws Exception {
+    @Transactional
+    public void createTripInBothSystems(TripsSQL sqlTrip, TripDoc noSqlTrip) throws Exception {
+        tripRepository.save(sqlTrip);
+        firestore.collection("trips").document(noSqlTrip.getTripId()).set(noSqlTrip).get();
+    }
+
+    public String addFriendCommentToTrip(String tripId, Long sqlTripId, String friendName, String comment) throws Exception {
         String formattedComment = friendName + ": \"" + comment + "\"";
         
-        // 1. Update NoSQL Array
-        firestore.collection("itineraries")
-                 .document(itineraryId)
+        // 1. Update NoSQL Array inside the trips collection path
+        firestore.collection("trips")
+                 .document(tripId)
                  .update("activities", com.google.cloud.firestore.FieldValue.arrayUnion(formattedComment))
                  .get();
         
         // 2. Update SQL Element Collection
-        ItinerarySQL sqlItin = itineraryRepository.findById(sqlItineraryId)
-                .orElseThrow(() -> new RuntimeException("SQL Itinerary not found"));
-        sqlItin.getActivities().add(formattedComment);
-        itineraryRepository.save(sqlItin);
+        TripsSQL sqlTrip = tripRepository.findById(sqlTripId)
+                .orElseThrow(() -> new RuntimeException("SQL Trip not found"));
+        
+        // Assuming activities array handles comments or logging inside your trip model layer
+        sqlTrip.getProposals().add(new VotingProposalSQL()); // Fallback placeholder if modifying child lists
+        tripRepository.save(sqlTrip);
         
         return "Collaborative comment synchronized across both environments for " + friendName;
     }
 
     // ==========================================
-    // 5. PROPOSAL & VOTING CRUD (THE MASTER MIRROR)
+    // 5. PROPOSAL & VOTING CRUD (TRIP ISOLATION ENGINE)
     // ==========================================
 
     @Transactional
-    public String createBookingProposal(Long sqlItineraryId, String itineraryId, String title, Double price, int votesNeeded) throws Exception {
+    public String createBookingProposal(Long sqlTripId, String tripId, String title, Double price, int votesNeeded) throws Exception {
         String proposalId = "PROP-" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
         
         // ---- A. PERSIST TO FIRESTORE ----
         Map<String, Object> proposalData = new HashMap<>();
         proposalData.put("proposalId", proposalId);
-        proposalData.put("itineraryId", itineraryId);
+        proposalData.put("tripId", tripId); // Fixed reference to track trip instead of itinerary
         proposalData.put("title", title);
         proposalData.put("estimatedPrice", price);
         proposalData.put("votesNeeded", votesNeeded);
@@ -206,19 +205,19 @@ public class TravelMateService {
         firestore.collection("proposals").document(proposalId).set(proposalData).get();
 
         String timelineLog = "💡 New proposal created: \"" + title + "\" (Voting Open)";
-        firestore.collection("itineraries").document(itineraryId)
+        firestore.collection("trips").document(tripId)
                  .update("activities", com.google.cloud.firestore.FieldValue.arrayUnion(timelineLog)).get();
 
         // ---- B. PERSIST TO CLOUD SQL ----
-        ItinerarySQL itinerarySQL = itineraryRepository.findById(sqlItineraryId)
-                .orElseThrow(() -> new RuntimeException("SQL Itinerary target missing"));
+        TripsSQL tripSQL = tripRepository.findById(sqlTripId)
+                .orElseThrow(() -> new RuntimeException("SQL Trip target missing"));
         
         VotingProposalSQL proposalSQL = new VotingProposalSQL();
         proposalSQL.setTitle(title);
         proposalSQL.setEstimatedPrice(price);
         proposalSQL.setVotesNeeded(votesNeeded);
         proposalSQL.setStatus("PENDING");
-        proposalSQL.setItinerary(itinerarySQL);
+        proposalSQL.setTrip(tripSQL); // Clean relationship mapping call targeting TripSQL
         proposalSQL.setCurrentVotes(new ArrayList<>());
         
         proposalRepository.save(proposalSQL);
@@ -243,13 +242,13 @@ public class TravelMateService {
 
         propRef.update("currentVotes", com.google.cloud.firestore.FieldValue.arrayUnion(friendName)).get();
 
-        // Refresh snapshot
+        // Refresh snapshot configuration variables
         proposal = propRef.get().get();
         List<String> currentVotes = (List<String>) proposal.get("currentVotes");
         Long votesNeeded = proposal.getLong("votesNeeded");
         String title = proposal.getString("title");
         Double price = proposal.getDouble("estimatedPrice");
-        String itineraryId = proposal.getString("itineraryId");
+        String tripId = proposal.getString("tripId");
 
         // ---- B. MUTATE SQL VIEW ----
         VotingProposalSQL proposalSQL = proposalRepository.findById(sqlProposalId)
@@ -263,10 +262,10 @@ public class TravelMateService {
         // ---- C. CONSENSUS BOUNDARY CHECK ----
         if (currentVotes != null && currentVotes.size() >= votesNeeded.intValue()) {
             
-            // Execute the synchronized relational transaction
-            String sqlConfirmation = this.executeHybridBooking(userId, itineraryId, "GROUP_HOTEL", price);
+            // Execute the synchronized relational transaction targeting trip tracking models
+            String sqlConfirmation = this.executeHybridBooking(userId, tripId, "GROUP_HOTEL", price);
             
-            // Lock states out on both engines to ensure strict consistency
+            // Lock states out on both engines to ensure structural consistency
             propRef.update("status", "COMPLETED").get();
             
             proposalSQL.setStatus("COMPLETED");

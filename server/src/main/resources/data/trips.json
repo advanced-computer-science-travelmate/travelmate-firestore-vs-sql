@@ -1,0 +1,10 @@
+[
+  {
+    "tripId": "TRIP-CHAMONIX-501",
+    "destinationName": "Chamonix Adventure",
+    "startDate": "2026-07-10",
+    "endDate": "2026-07-17",
+    "userId": "USER-ARJUN-101",
+    "maxTravelers": 2
+  }
+]

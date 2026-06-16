@@ -4,26 +4,26 @@ import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name="itineraries")
-public class ItinerarySQL {
-	@Id
+@Table(name = "trips")
+public class TripsSQL {
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String destination;
+    @ManyToOne
+    @JoinColumn(name = "destination_id", nullable = false)
+    private DestinationSQL destination;
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -34,29 +34,23 @@ public class ItinerarySQL {
     @Column(name = "max_travelers")
     private Integer maxTravelers;
 
-    @ElementCollection
-    @CollectionTable(name = "itinerary_activities", joinColumns = @JoinColumn(name = "itinerary_id"))
-    @Column(name = "activity")
-    private List<String> activities;
-
-    @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Retained from your original structure to lock proposals onto a specific live trip instance
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VotingProposalSQL> proposals;
 
-    public ItinerarySQL() {}
+    public TripsSQL() {}
 
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getDestination() { return destination; }
-    public void setDestination(String destination) { this.destination = destination; }
+    public DestinationSQL getDestination() { return destination; }
+    public void setDestination(DestinationSQL destination) { this.destination = destination; }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public Integer getMaxTravelers() { return maxTravelers; }
     public void setMaxTravelers(Integer maxTravelers) { this.maxTravelers = maxTravelers; }
-    public List<String> getActivities() { return activities; }
-    public void setActivities(List<String> activities) { this.activities = activities; }
     public List<VotingProposalSQL> getProposals() { return proposals; }
     public void setProposals(List<VotingProposalSQL> proposals) { this.proposals = proposals; }
 }

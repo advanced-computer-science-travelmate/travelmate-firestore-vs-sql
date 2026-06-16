@@ -6,7 +6,6 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -17,7 +16,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name="voting_proposals")
 public class VotingProposalSQL {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -31,13 +30,13 @@ public class VotingProposalSQL {
     private Integer votesNeeded;
 
     @Column(nullable = false)
-    private String status; // PENDING, COMPLETED
+    private String status; // PENDING, APPROVED, COMPLETED
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "itinerary_id", nullable = false)
-    private ItinerarySQL itinerary;
+    // FIX 1: Pointing to the correct singular class type: TripSQL
+    @ManyToOne
+    @JoinColumn(name = "trip_id")
+    private TripsSQL trip;
 
-    // Relational breakdown for voting arrays: A dedicated target junction table
     @ElementCollection
     @CollectionTable(name = "proposal_voters", joinColumns = @JoinColumn(name = "proposal_id"))
     @Column(name = "voter_name")
@@ -56,7 +55,11 @@ public class VotingProposalSQL {
     public void setVotesNeeded(Integer votesNeeded) { this.votesNeeded = votesNeeded; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public void setItinerary(ItinerarySQL itinerary) { this.itinerary = itinerary; }
+    
+    // FIX 2: Updated relationship getter and setter to use the new TripSQL reference
+    public TripsSQL getTrip() { return trip; }
+    public void setTrip(TripsSQL trip) { this.trip = trip; }
+    
     public List<String> getCurrentVotes() { return currentVotes; }
     public void setCurrentVotes(List<String> currentVotes) { this.currentVotes = currentVotes; }
 }
