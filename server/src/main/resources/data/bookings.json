@@ -1,0 +1,8 @@
+[
+  {
+    "bookingId": "BOOK-CHAMONIX-501",
+    "type": "HOTEL",
+    "price": 850.0,
+    "confirmationNumber": "CONF-GERMANYRESORT"
+  }
+]

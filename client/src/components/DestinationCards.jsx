@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getEuropeanDestinations } from "../services/destinationService";
+import { destinationService } from "../services/destinationService";
 
 function DestinationCards() {
   const [destinations, setDestinations] = useState([]);
@@ -12,7 +12,7 @@ function DestinationCards() {
   useEffect(() => {
     async function loadDestinations() {
       try {
-        const data = await getEuropeanDestinations();
+        const data = await destinationService.getEuropeanDestinations();
         setDestinations(data);
       } catch (error) {
         console.error("Failed to load destinations:", error);

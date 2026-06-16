@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getEuropeanDestinations } from "../services/destinationService";
+import { destinationService } from "../services/destinationService";
 import HotelCards from "../components/HotelCards";
 
 function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
@@ -19,7 +19,7 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
   useEffect(() => {
     async function loadDestination() {
       try {
-        const data = await getEuropeanDestinations();
+        const data = await destinationService.getEuropeanDestinations();
 
         const selectedDestination = data.find(
           (item) => item.id === Number(destinationId)
@@ -43,11 +43,11 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
     const trips = savedTrips ? JSON.parse(savedTrips) : [];
 
     const newTrip = {
-      id: Date.now(),
-      destination: destination.name,
-      startDate,
-      endDate,
-      image: destination.image,
+    id: Date.now(),
+    destination: destination.name,
+    startDate,
+    endDate,
+    image: destination.image,
     };
 
     localStorage.setItem("trips", JSON.stringify([...trips, newTrip]));
@@ -60,17 +60,42 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
     setTimeout(() => {
       navigate("/trips");
     }, 800);
+
+    // Create the exact data transfer body your synchronized seed layers expect
+  const tripPayload = {
+    destinationName: destination.name,
+    startDate: startDate,
+    endDate: endDate,
+    maxTravelers: 2
+  };
+
+  // Dispatch simultaneously to your multi-cloud persistence engine
+  axios.post('http://localhost:8080/api/travel/trips/create', tripPayload)
+    .then((response) => {
+      setMessage("🎉 Multi-cloud transaction successful! Trip replicated across systems.");
+      setShowDateForm(false);
+      setStartDate("");
+      setEndDate("");
+      
+      setTimeout(() => {
+        navigate("/trips");
+      }, 1000);
+    })
+    .catch((error) => {
+      console.error("Database persistence fallback fail:", error);
+      setMessage("⚠️ Sync failed. Reverting to structural fallback storage locally.");
+      
+      // Fallback to local storage if your backend instance is temporarily offline
+      const savedTrips = localStorage.getItem("trips");
+      const trips = savedTrips ? JSON.parse(savedTrips) : [];
+      localStorage.setItem("trips", JSON.stringify([...trips, { ...tripPayload, id: Date.now(), image: destination.image }]));
+      navigate("/trips");
+    });
   }
 
   if (loading) {
     return (
       <>
-        <Navbar
-          isLoggedIn={isLoggedIn}
-          onLoginClick={onLogin}
-          onLogout={onLogout}
-        />
-
         <main className="min-h-screen bg-slate-50 px-6 py-16">
           <section className="max-w-7xl mx-auto">
             <p className="text-slate-600">Loading destination...</p>

@@ -1,5 +1,6 @@
 package com.travelmate.travelmate_api.models.nosql;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DestinationDoc {
@@ -7,7 +8,7 @@ public class DestinationDoc {
     private String name;
     private String overview;
     private String image;
-    private List<String> activities;
+    private List<String> activities = new ArrayList<>();
     
 	public String getId() {
 		return id;
@@ -40,6 +41,31 @@ public class DestinationDoc {
 		this.activities = activities;
 	}
 	
+	// This dynamically intercepts the data and generates the "famousCities" array on the fly!
+	public List<String> getFamousCities() {
+        List<String> cities = new ArrayList<>();
+        if (this.activities != null) {
+            for (String activity : this.activities) {
+                if (activity.startsWith("CITY:")) {
+                    cities.add(activity.substring(5)); // Trims out the "CITY:" prefix
+                }
+            }
+        }
+        return cities;
+    }
+
+    // This dynamically intercepts the data and generates the "famousPlaces" array on the fly!
+    public List<String> getFamousPlaces() {
+        List<String> places = new ArrayList<>();
+        if (this.activities != null) {
+            for (String activity : this.activities) {
+                if (activity.startsWith("PLACE:")) {
+                    places.add(activity.substring(6)); // Trims out the "PLACE:" prefix
+                }
+            }
+        }
+        return places;
+    }
 
     
 }

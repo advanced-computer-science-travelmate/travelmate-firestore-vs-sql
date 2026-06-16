@@ -1,7 +1,9 @@
 package com.travelmate.travelmate_api.controller;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,8 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.travelmate.travelmate_api.models.nosql.TripDoc;
+import com.travelmate.travelmate_api.models.sql.DestinationSQL;
 import com.travelmate.travelmate_api.models.sql.TripsSQL;
+import com.travelmate.travelmate_api.repository.sql.DestinationSQLRepository;
 import com.travelmate.travelmate_api.repository.sql.TripSQLRepository;
+import com.travelmate.travelmate_api.service.TravelMateService;
 
 @RestController
 @RequestMapping("/api/travel/trips")
@@ -23,11 +28,51 @@ import com.travelmate.travelmate_api.repository.sql.TripSQLRepository;
 public class TravelMateTripController {
 
     private final TripSQLRepository tripSqlRepository;
+    private final DestinationSQLRepository destinationSqlRepository;
+    private final TravelMateService travelMateService;
     private final Firestore firestore;
 
-    public TravelMateTripController(TripSQLRepository tripSqlRepository, Firestore firestore) {
+    public TravelMateTripController(TripSQLRepository tripSqlRepository, DestinationSQLRepository destinationSqlRepository, 
+    								TravelMateService travelMateService, Firestore firestore) {
         this.tripSqlRepository = tripSqlRepository;
+        this.destinationSqlRepository = destinationSqlRepository;
+        this.travelMateService = travelMateService;
         this.firestore = firestore;
+    }
+    
+    @PostMapping("/create")
+    public ResponseEntity<String> createTrip(@RequestBody Map<String, Object> payload) throws Exception {
+        
+        String destinationName = (String) payload.get("destinationName");
+        String startDateStr = (String) payload.get("startDate");
+        String endDateStr = (String) payload.get("endDate");
+        int maxTravelers = (Integer) payload.get("maxTravelers");
+
+        
+        DestinationSQL matchedDest = destinationSqlRepository.findAll().stream()
+                .filter(d -> d.getName().equalsIgnoreCase(destinationName))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Destination not found in catalog database: " + destinationName));
+
+        TripsSQL sqlTrip = new TripsSQL();
+        sqlTrip.setDestination(matchedDest);
+        sqlTrip.setStartDate(LocalDate.parse(startDateStr));
+        sqlTrip.setEndDate(LocalDate.parse(endDateStr));
+        sqlTrip.setMaxTravelers(maxTravelers);
+
+        // 2. CONSTRUCT NON-RELATIONAL DATA (Firestore Document)
+        TripDoc noSqlTrip = new TripDoc();
+        // Generate a clean string tracking ID matching your collection path blueprint
+        noSqlTrip.setTripId("TRIP-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        noSqlTrip.setDestinationName(destinationName);
+        noSqlTrip.setStartDate(startDateStr);
+        noSqlTrip.setEndDate(endDateStr);
+        noSqlTrip.setUserId("USER-ACTIVE-101"); // Wire this dynamically later once your auth module is fully bound
+
+        // 3. PASS TO SYNCHRONIZED TRANSACTION AGENT
+        travelMateService.createTripInBothSystems(sqlTrip, noSqlTrip);
+
+        return ResponseEntity.ok("Successfully synchronized trip lifecycle records across both database engines!");
     }
 
     // --- CLOUD SQL PATH ---

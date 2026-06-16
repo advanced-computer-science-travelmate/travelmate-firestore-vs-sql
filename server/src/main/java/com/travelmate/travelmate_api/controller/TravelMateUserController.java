@@ -51,7 +51,7 @@ public class TravelMateUserController {
 
         UserDoc noSqlUser = new UserDoc();
         noSqlUser.setUserId(firestoreId);
-        noSqlUser.setName(fullName);
+        noSqlUser.setName(sqlUser.getName());
         noSqlUser.setEmail(emailAddress);
         noSqlUser.setEmbeddedBookings(new ArrayList<>());
         
@@ -62,7 +62,7 @@ public class TravelMateUserController {
         return Map.of(
             "sqlId", String.valueOf(sqlUser.getId()),
             "noSqlId", firestoreId,
-            "name", fullName,
+            "name", sqlUser.getName(),
             "email", emailAddress
         );
     }

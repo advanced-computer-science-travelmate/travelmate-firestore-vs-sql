@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getEuropeanDestinations } from "../services/destinationService";
+import { destinationService } from "../services/destinationService";
 
 function VotingPoll() {
   const [destinations, setDestinations] = useState([]);
@@ -13,7 +13,7 @@ function VotingPoll() {
   useEffect(() => {
     async function loadDestinations() {
       try {
-        const data = await getEuropeanDestinations();
+        const data = await destinationService.getEuropeanDestinations();
         setDestinations(data);
       } catch (error) {
         console.error("Failed to load destinations:", error);

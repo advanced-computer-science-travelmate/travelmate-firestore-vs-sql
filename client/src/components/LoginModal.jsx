@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { authService } from "../services/authService";
 
-function LoginModal({ onClose }) {
+function LoginModal({ onClose, onLoginSuccess, onResponseClose }) {
+
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -25,43 +31,70 @@ function LoginModal({ onClose }) {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) { // Added missing async keyword
     event.preventDefault();
 
-    setError("");
-    setSuccess("");
+    setLoading(true);
+    setError(""); // Reset error banners on form submit
+    setSuccess(""); // Reset success metrics
+    setStatusMessage("");
+    setIsError(false);
 
+    // --- Validation Rules using formData ---
     if (!formData.email || !formData.password) {
       setError("Please enter your email and password.");
+      setLoading(false);
       return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (!emailPattern.test(formData.email)) {
       setError("Please enter a valid email address.");
+      setLoading(false);
       return;
     }
 
     if (isSignup && !formData.fullName) {
       setError("Please enter your full name.");
+      setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters.");
+      setLoading(false);
       return;
     }
 
     if (isSignup && formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
+      setLoading(false);
       return;
     }
 
-    if (isSignup) {
-      setSuccess("Account created successfully. Backend connection pending.");
-    } else {
-      setSuccess("Login successful. Backend connection pending.");
+    try {
+      const submissionName = formData.fullName || "Active User";
+      const data = await authService.login(submissionName, formData.email);
+      
+      setIsError(false);
+      // Update your visual success text dynamically with actual database tracker keys
+      setSuccess(`Database Sync Complete! Account Mapped: (SQL ID: ${data.sqlId} | NoSQL ID: ${data.noSqlId})`);
+      
+      localStorage.setItem("userSession", JSON.stringify(data));
+      
+      // Execute pass-down success lifecycle triggers
+      if (onLoginSuccess) onLoginSuccess(data);
+
+      setTimeout(() => {
+        if (onResponseClose) onResponseClose();
+        else if (onClose) onClose();
+      }, 1500);
+
+    } catch (error) {
+      console.error("Authentication integration mismatch:", error);
+      setError("Cross-Engine connection failed. Ensure Spring Boot is running on port 8080.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -120,6 +153,16 @@ function LoginModal({ onClose }) {
             <div className="mt-5 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-green-600 text-sm">
               {success}
             </div>
+          )}
+
+          {statusMessage && (
+          <div className={`p-3 rounded-xl font-medium text-sm border ${
+            isError 
+              ? "bg-red-50 text-red-700 border-red-200" 
+              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+          }`}>
+            {statusMessage}
+          </div>
           )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

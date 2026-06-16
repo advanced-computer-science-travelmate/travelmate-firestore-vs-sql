@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import Navbar from "../components/Navbar";
-import { getEuropeanDestinations } from "../services/destinationService";
+import { destinationService } from "../services/destinationService";
 import VotingPoll from "../components/VotingPoll";
 
 function Trips({ isLoggedIn, onLogin, onLogout }) {
@@ -12,6 +13,8 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
     return savedTrips ? JSON.parse(savedTrips) : [];
   });
 
+  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+
   const [showForm, setShowForm] = useState(false);
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -21,7 +24,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   useEffect(() => {
     async function loadDestinations() {
       try {
-        const data = await getEuropeanDestinations();
+        const data = await destinationService.getEuropeanDestinations();
         setDestinations(data);
       } catch (error) {
         console.error("Failed to load destinations:", error);
@@ -34,8 +37,24 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("trips", JSON.stringify(trips));
-  }, [trips]);
+    if (isLoggedIn) {
+      setIsLoadingTrips(true);
+      // Fetch dynamic records from your NoSQL/Firestore benchmark catalog footprint
+      axios.get("http://localhost:8080/api/travel/destinations/firestore")
+        .then((response) => {
+          setTrips(response.data);
+        })
+        .catch((error) => {
+          console.error("Failed to load backend trips:", error);
+          // Graceful fallback to localStorage if your local server is booting
+          const savedTrips = localStorage.getItem("trips");
+          if (savedTrips) setTrips(JSON.parse(savedTrips));
+        })
+        .finally(() => {
+          setIsLoadingTrips(false);
+        });
+    }
+  }, [isLoggedIn]);
 
   function handleCreateTrip(e) {
     e.preventDefault();
@@ -44,20 +63,46 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
       (item) => item.name === destination,
     );
 
-    const newTrip = {
-      id: Date.now(),
-      destination,
-      startDate,
-      endDate,
-      image: selectedDestination?.image || "",
+    // Retrieve your dual session keys populated via our /mock-login route
+    const savedSession = localStorage.getItem("userSession");
+    const userSession = savedSession ? JSON.parse(savedSession) : null;
+
+    const tripPayload = {
+      destinationName: destination,
+      startDate: startDate,
+      endDate: endDate,
+      maxTravelers: 2, // Fallback configuration placeholder rule
+      userId: userSession ? userSession.noSqlId : "USER-ACTIVE-101",
+      sqlUserId: userSession ? userSession.sqlId : "1"
     };
 
-    setTrips([...trips, newTrip]);
+    // Fire directly into the TravelMateTripController endpoint we built
+    axios.post("http://localhost:8080/api/travel/trips/create", tripPayload)
+      .then((response) => {
+        // Construct the structural card fallback for real-time frontend mapping updates
+        const optimisticNewCard = {
+          id: Date.now(), // Unique runtime tracker key string
+          destinationName: destination,
+          destination, // Backwards-compatible fallback matching legacy text keys
+          startDate,
+          endDate,
+          image: selectedDestination?.image || "",
+        };
 
-    setDestination("");
-    setStartDate("");
-    setEndDate("");
-    setShowForm(false);
+        const updatedTrips = [...trips, optimisticNewCard];
+        setTrips(updatedTrips);
+        localStorage.setItem("trips", JSON.stringify(updatedTrips));
+
+        // Reset state properties
+        setDestination("");
+        setStartDate("");
+        setEndDate("");
+        setShowForm(false);
+      })
+      .catch((error) => {
+        console.error("Multi-cloud transaction aborted:", error);
+        alert("Dual-Persistence write failure. Reverting layout state context rules.");
+      });
   }
 
   function handleDeleteTrip(id) {
@@ -65,17 +110,14 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
     setTrips(updatedTrips);
   }
 
+  const savedSession = localStorage.getItem("userSession");
+  const activeSessionExists = !!savedSession;
+
   return (
     <>
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onLoginClick={onLogin}
-        onLogout={onLogout}
-      />
-
       <main className="min-h-screen bg-slate-50 px-6 py-16">
         <section className="max-w-7xl mx-auto">
-          {!isLoggedIn ? (
+          {!activeSessionExists ? (
             <div className="bg-white rounded-3xl shadow-sm p-10 text-center">
               <h1 className="text-4xl font-bold text-slate-900">
                 Login to plan a trip
@@ -248,7 +290,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
 
                         <div className="flex gap-3 mt-6">
                           <button className="border border-blue-600 text-blue-600 px-5 py-2 rounded-xl font-semibold hover:bg-blue-50 transition">
-                            View Itinerary
+                            View Activities
                           </button>
 
                           <button

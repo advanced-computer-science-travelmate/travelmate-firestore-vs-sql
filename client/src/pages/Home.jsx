@@ -10,11 +10,6 @@ function Home({ isLoggedIn, onLogin, onLogout }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onLoginClick={() => setShowLogin(true)}
-        onLogout={onLogout}
-      />
       <Hero isLoggedIn={isLoggedIn} onLoginClick={() => setShowLogin(true)} />
       <DestinationCards />
 
