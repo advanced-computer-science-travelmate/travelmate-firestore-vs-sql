@@ -1,4 +1,4 @@
-function DatabaseComparison() {
+function DatabaseComparison({ onCompareClick, isTesting }) {
   return (
     <section className="max-w-7xl mx-auto px-6 py-16">
       <div className="bg-gradient-to-br from-blue-50 to-slate-100 rounded-3xl p-8 md:p-12">
@@ -14,8 +14,19 @@ function DatabaseComparison() {
             </p>
           </div>
 
-          <button className="bg-white border border-blue-600 text-blue-600 px-5 py-3 rounded-xl font-semibold hover:bg-blue-50">
-            Compare Now
+          <button
+            onClick={onCompareClick}
+            disabled={isTesting}
+            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+          >
+            {isTesting ? (
+              <>
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                Running Live Benchmarks...
+              </>
+            ) : (
+              "Compare Now"
+            )}
           </button>
         </div>
 
