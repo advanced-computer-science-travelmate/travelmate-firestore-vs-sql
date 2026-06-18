@@ -9,6 +9,7 @@ import CompareDB from "./pages/CompareDB";
 import DestinationDetails from "./pages/DestinationDetails";
 import Navbar from "./components/Navbar";
 import LoginModal from "./components/LoginModal";
+import ItineraryDetails from "./pages/ItineraryDetails";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -33,45 +34,38 @@ function App() {
     localStorage.removeItem("user_sql_id");
     localStorage.removeItem("userSession");
     localStorage.removeItem("trips"); // Clears the local card cache
-    
-    window.location.href = "/";
+
+    // Reset core states to force an immediate global re-render
+    setCurrentUser(null);
   }
 
   return (
     <BrowserRouter>
-    <Navbar 
-        isLoggedIn={isLoggedIn} 
+      <Navbar
+        isLoggedIn={isLoggedIn}
         currentUser={currentUser}
-        onLoginClick={() => setShowLoginModal(true)} 
-        onLogout={handleLogout} 
-    />
-    
-    {showLoginModal && (
-        <LoginModal 
-      onClose={() => setShowLoginModal(false)} 
-      onLoginSuccess={(userData) => {
-        // 1. Maintain the session object record mapping
-        localStorage.setItem("userSession", JSON.stringify(userData));
-        
-        // 🚀 CLEAN & SYSTEM-DRIVEN: Strictly bind to the incoming auth fields
-        localStorage.setItem("name", userData.name);
-        localStorage.setItem("user_email", userData.email || userData.user_email);
-        localStorage.setItem("user_nosql_id", userData.noSqlId || userData.user_nosql_id);
-        localStorage.setItem("user_sql_id", userData.sqlId || userData.user_sql_id);
-       
-        // 2. Clear out the display rendering blocks
-        setCurrentUser(userData);
-        setShowLoginModal(false); 
-      }} 
-    />
+        onLoginClick={() => setShowLoginModal(true)}
+        onLogout={handleLogout}
+      />
+
+      {showLoginModal && (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onLoginSuccess={(userData) => {
+            localStorage.setItem("userSession", JSON.stringify(userData));
+
+            setCurrentUser(userData);
+            setShowLoginModal(false); // Instantly dismiss overlay window on success
+          }}
+        />
       )}
       <Routes>
         <Route
           path="/"
           element={
             <Home
-              isLoggedIn={isLoggedIn} 
-              onLogin={() => setShowLoginModal(true)} 
+              isLoggedIn={isLoggedIn}
+              onLogin={() => setShowLoginModal(true)}
               onLogout={handleLogout}
             />
           }
@@ -81,12 +75,13 @@ function App() {
           path="/trips"
           element={
             <Trips
-              isLoggedIn={isLoggedIn} 
-              onLogin={() => setShowLoginModal(true)} 
-              onLogout={handleLogout} 
-              />
-            }
+              isLoggedIn={isLoggedIn}
+              onLogin={() => setShowLoginModal(true)}
+              onLogout={handleLogout}
+            />
+          }
         />
+        <Route path="/trips/:tripId/itinerary" element={<ItineraryDetails />} />
 
         <Route path="/dashboard" element={<Dashboard />} />
         {/* <Route path="/itineraries" element={<Itineraries />} /> */}
@@ -95,14 +90,14 @@ function App() {
         <Route
           path="/destinations/:destinationId"
           element={
-            <DestinationDetails 
-            isLoggedIn={isLoggedIn} 
-            currentUser={currentUser} 
-            onLogin={() => setShowLoginModal(true)} 
-            onLogout={handleLogout} />
+            <DestinationDetails
+              isLoggedIn={isLoggedIn}
+              currentUser={currentUser}
+              onLogin={() => setShowLoginModal(true)}
+              onLogout={handleLogout}
+            />
           }
         />
-
       </Routes>
     </BrowserRouter>
   );

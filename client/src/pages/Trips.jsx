@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { destinationService } from "../services/destinationService";
 import VotingPoll from "../components/VotingPoll";
+import HotelCards from "../components/HotelCards";
 
 function Trips({ isLoggedIn, onLogin, onLogout }) {
+  const navigate = useNavigate();
   const [destinations, setDestinations] = useState([]);
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
 
@@ -19,6 +22,11 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [showVoting, setShowVoting] = useState(false);
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const [rooms, setRooms] = useState(1);
+  const [selectedHotelTripId, setSelectedHotelTripId] = useState(null);
+
 
   // Retrieve active session details safely
   const savedSession = localStorage.getItem("userSession");
@@ -46,6 +54,9 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
       setIsLoadingTrips(true);
       // Fetching synchronized data payload shapes straight from our updated controllers
       axios.get("http://localhost:8080/api/travel/trips/sql")
+      // Fetch dynamic records from your NoSQL/Firestore benchmark catalog footprint
+      axios
+        .get("http://localhost:8080/api/travel/destinations/firestore")
         .then((response) => {
           setTrips(response.data);
         })
@@ -75,13 +86,17 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
       destinationName: destination,
       startDate: startDate,
       endDate: endDate,
-      maxTravelers: 2,
-      userId: dynamicNoSqlId,
-      userName: dynamicUserName,
-      sqlUserId: dynamicSqlId
+      maxTravelers: 2, // Fallback configuration placeholder rule
+      userId: userSession ? userSession.noSqlId : "USER-ACTIVE-101",
+      sqlUserId: userSession ? userSession.sqlId : "1",
+      adults,
+      children,
+      rooms,
     };
 
-    axios.post("http://localhost:8080/api/travel/trips/create", tripPayload)
+    // Fire directly into the TravelMateTripController endpoint we built
+    axios
+      .post("http://localhost:8080/api/travel/trips/create", tripPayload)
       .then((response) => {
         const optimisticNewCard = {
           id: Date.now(), 
@@ -90,7 +105,11 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
           startDate,
           endDate,
           image: selectedDestination?.image || "",
-          bookings: [] // Initializes with an empty booking array layer
+          bookings: [], // Initializes with an empty booking array layer
+          adults,
+          children,
+          rooms,
+          hotels: [],
         };
 
         // Maintain array structural consistency on addition
@@ -102,10 +121,15 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
         setStartDate("");
         setEndDate("");
         setShowForm(false);
+        setAdults(1);
+        setChildren(0);
+        setRooms(1);
       })
       .catch((error) => {
         console.error("Multi-cloud transaction aborted:", error);
-        alert("Dual-Persistence write failure. Reverting layout state context rules.");
+        alert(
+          "Dual-Persistence write failure. Reverting layout state context rules.",
+        );
       });
   }
 
@@ -183,6 +207,47 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">End date</label>
                       <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Adults
+                      </label>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={adults}
+                        onChange={(e) => setAdults(Number(e.target.value))}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Children
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        value={children}
+                        onChange={(e) => setChildren(Number(e.target.value))}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Rooms
+                      </label>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={rooms}
+                        onChange={(e) => setRooms(Number(e.target.value))}
+                        className="w-full border border-slate-300 rounded-xl px-4 py-3"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-4 mt-8">
                     <button type="submit" disabled={isLoadingDestinations} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:bg-slate-400">Create Trip</button>
@@ -259,10 +324,27 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                         </div>
                       </div>
 
-                      <div className="p-6 pt-4">
-                        <div className="flex gap-3 mt-2">
-                          <button className="flex-1 text-center border border-blue-600 text-blue-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-50 transition">
-                            View Activities
+                        <div className="flex flex-wrap gap-3 mt-6">
+                          <button
+                            onClick={() =>
+                              navigate(`/trips/${trip.id}/itinerary`)
+                            }
+                            className="border border-blue-600 text-blue-600 px-5 py-2 rounded-xl font-semibold hover:bg-blue-50 transition"
+                          >
+                            Open Itinerary
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              setSelectedHotelTripId(
+                                selectedHotelTripId === trip.id
+                                  ? null
+                                  : trip.id,
+                              )
+                            }
+                            className="border border-green-600 text-green-600 px-5 py-2 rounded-xl font-semibold hover:bg-green-50 transition"
+                          >
+                            Book Hotels
                           </button>
                           <button
                             onClick={() => handleDeleteTrip(trip.id)}
@@ -271,9 +353,26 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                             Delete
                           </button>
                         </div>
-                      </div>
 
-                    </div>
+                       
+                        <div className="mt-6 border-t border-slate-200 pt-5">
+                          <p className="font-semibold text-slate-900">
+                            Need a place to stay?
+                          </p>
+
+                          <p className="text-sm text-slate-600 mt-1">
+                            Find hotel recommendations for this trip.
+                          </p>
+
+                          {selectedHotelTripId === trip.id && (
+                            <HotelCards
+                              destination={
+                                trip.destination || trip.destinationName
+                              }
+                            />
+                          )}
+                        </div>
+                      </div>
                   ))}
                 </div>
               )}
