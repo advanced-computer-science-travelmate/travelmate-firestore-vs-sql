@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import { destinationService } from "../services/destinationService";
 import HotelCards from "../components/HotelCards";
+import axios from "axios";
 
 function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
   const { destinationId } = useParams();
@@ -95,26 +95,17 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
 
   if (loading) {
     return (
-      <>
-        <main className="min-h-screen bg-slate-50 px-6 py-16">
+      <main className="min-h-screen bg-slate-50 px-6 py-16">
           <section className="max-w-7xl mx-auto">
             <p className="text-slate-600">Loading destination...</p>
           </section>
         </main>
-      </>
     );
   }
 
   if (!destination) {
     return (
-      <>
-        <Navbar
-          isLoggedIn={isLoggedIn}
-          onLoginClick={onLogin}
-          onLogout={onLogout}
-        />
-
-        <main className="min-h-screen bg-slate-50 px-6 py-16">
+      <main className="min-h-screen bg-slate-50 px-6 py-16">
           <section className="max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-slate-900">
               Destination not found
@@ -128,17 +119,12 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
             </Link>
           </section>
         </main>
-      </>
     );
   }
 
   return (
-    <>
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onLoginClick={onLogin}
-        onLogout={onLogout}
-      />
+    
+    
 
       <main className="min-h-screen bg-slate-50">
         <section className="max-w-7xl mx-auto px-6 py-12">
@@ -297,7 +283,6 @@ function DestinationDetails({ isLoggedIn, onLogin, onLogout }) {
           </div>
         </section>
       </main>
-    </>
   );
 }
 

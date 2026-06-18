@@ -1,6 +1,7 @@
 import Navbar from "../components/Navbar";
 import DestinationCards from "../components/DestinationCards";
 
+
 function Destinations() {
   return (
     <>

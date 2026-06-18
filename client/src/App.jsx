@@ -89,7 +89,7 @@ function App() {
         />
 
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* <Route path="/itineraries" element={<Itineraries />} /> */}/
+        {/* <Route path="/itineraries" element={<Itineraries />} /> */}
         <Route path="/destinations" element={<Destinations />} />
         <Route path="/compare-db" element={<CompareDB />} />
         <Route
