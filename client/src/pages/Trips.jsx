@@ -209,13 +209,19 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                   {trips.map((trip) => (
                     <div key={trip.id} className="bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col justify-between border border-slate-100">
                       <div>
-                        {trip.image && (
-                          <img src={trip.image} alt={trip.destination || trip.destinationName} className="h-40 w-full object-cover" />
-                        )}
+                        {trip.image || (trip.destination && trip.destination.image) ? (
+                          <img 
+                            src={trip.image || trip.destination.image} 
+                            alt={trip.destinationName} 
+                            className="h-40 w-full object-cover" 
+                          />
+                        ) : null}
 
                         <div className="p-6 pb-0">
                           <h3 className="text-2xl font-bold text-slate-900">
-                            {trip.destination || trip.destinationName}
+                            {typeof trip.destination === 'object' && trip.destination !== null 
+                              ? trip.destination.name 
+                              : (trip.destination || trip.destinationName)}
                           </h3>
                           <p className="text-slate-500 text-xs mt-1.5 font-medium">
                             📅 {trip.startDate} to {trip.endDate}

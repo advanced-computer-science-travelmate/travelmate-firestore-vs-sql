@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
@@ -44,6 +45,8 @@ public class TravelMateTripController {
         this.firestore = firestore;
     }
     
+    private final RestTemplate restTemplate = new RestTemplate();
+    
     @PostMapping("/create")
     public ResponseEntity<String> createTrip(@RequestBody Map<String, Object> payload) throws Exception {
         
@@ -55,7 +58,21 @@ public class TravelMateTripController {
         String passedUserId = payload.containsKey("userId") ? (String) payload.get("userId") : "USER-ACTIVE-101";
         String passedUserName = payload.containsKey("userName") ? (String) payload.get("userName") : "Siddharth D";
         
-     // 1. QUERY EXISTING MASTER CATALOG FOR DATA INTEGRITY
+        String url = "https://restcountries.com/v3.1/region/europe?fields=name";
+        List<Map<String, Object>> apiResponse = restTemplate.getForObject(url, List.class);
+        
+        // Extract the common English names of all European countries dynamically
+        List<String> europeanCountryNames = new ArrayList<>();
+        if (apiResponse != null) {
+            for (Map<String, Object> countryData : apiResponse) {
+                Map<String, Object> nameObj = (Map<String, Object>) countryData.get("name");
+                if (nameObj != null && nameObj.containsKey("common")) {
+                    europeanCountryNames.add((String) nameObj.get("common"));
+                }
+            }
+        }
+        
+        // 1. QUERY EXISTING MASTER CATALOG FOR DATA INTEGRITY
         DestinationSQL matchedDest = destinationSqlRepository.findAll().stream()
                 .filter(d -> d.getName().equalsIgnoreCase(destinationName))
                 .findFirst()

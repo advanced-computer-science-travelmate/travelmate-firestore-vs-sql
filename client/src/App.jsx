@@ -27,7 +27,7 @@ function App() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("user_name");
+    localStorage.removeItem("name");
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_nosql_id");
     localStorage.removeItem("user_sql_id");

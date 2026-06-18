@@ -2,6 +2,8 @@ package com.travelmate.travelmate_api.models.sql;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -36,7 +38,8 @@ public class DestinationSQL {
     private List<String> activities;
     
     @ManyToOne
-    @JoinColumn(name = "trip_id", nullable = true)
+    @JoinColumn(name = "trip_id", insertable = false, updatable = false)
+    @JsonBackReference
     private TripsSQL trip;
 
     // 🚀 ADD THIS COLUMN TO TRACK VOTES DYNAMICALLY PER TRIP POLL
