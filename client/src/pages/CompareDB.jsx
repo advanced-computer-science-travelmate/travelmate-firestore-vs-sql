@@ -65,7 +65,7 @@ function CompareDB() {
       // --- SET VISUAL METRICS STATE ---
       setMetrics({
         sql: {
-          time: firestoreTimeRaw.toFixed(2), // Uses your real live millisecond values
+          time: sqlTimeRaw.toFixed(2), // Uses your real live millisecond values
           count: 3, // Current local mock dataset scope array count
           status: 'SUCCESS',
           lookupScore: sqlLookupScore,
@@ -73,7 +73,7 @@ function CompareDB() {
           joinScore: sqlJoinScore
         },
         firestore: {
-          time: sqlTimeRaw.toFixed(2), // Uses your real live millisecond values
+          time: firestoreTimeRaw.toFixed(2), // Uses your real live millisecond values
           count: 3,
           status: 'SUCCESS',
           lookupScore: firestoreLookupScore,

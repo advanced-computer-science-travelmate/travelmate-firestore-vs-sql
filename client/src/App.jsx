@@ -27,12 +27,14 @@ function App() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_email");
+    localStorage.removeItem("user_nosql_id");
+    localStorage.removeItem("user_sql_id");
     localStorage.removeItem("userSession");
     localStorage.removeItem("trips"); // Clears the local card cache
     
-    // Reset core states to force an immediate global re-render
-    setCurrentUser(null);
+    window.location.href = "/";
   }
 
   return (
@@ -46,14 +48,22 @@ function App() {
     
     {showLoginModal && (
         <LoginModal 
-          onClose={() => setShowLoginModal(false)} 
-          onLoginSuccess={(userData) => {
-            localStorage.setItem("userSession", JSON.stringify(userData));
-           
-            setCurrentUser(userData);
-            setShowLoginModal(false); // Instantly dismiss overlay window on success
-          }} 
-        />
+      onClose={() => setShowLoginModal(false)} 
+      onLoginSuccess={(userData) => {
+        // 1. Maintain the session object record mapping
+        localStorage.setItem("userSession", JSON.stringify(userData));
+        
+        // 🚀 CLEAN & SYSTEM-DRIVEN: Strictly bind to the incoming auth fields
+        localStorage.setItem("name", userData.name);
+        localStorage.setItem("user_email", userData.email || userData.user_email);
+        localStorage.setItem("user_nosql_id", userData.noSqlId || userData.user_nosql_id);
+        localStorage.setItem("user_sql_id", userData.sqlId || userData.user_sql_id);
+       
+        // 2. Clear out the display rendering blocks
+        setCurrentUser(userData);
+        setShowLoginModal(false); 
+      }} 
+    />
       )}
       <Routes>
         <Route

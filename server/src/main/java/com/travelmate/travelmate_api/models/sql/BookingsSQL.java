@@ -35,6 +35,10 @@ public class BookingsSQL {
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private BudgetSQL budgetExpense;
 
+    @ManyToOne
+    @JoinColumn(name = "trip_id", nullable = true)
+    private TripsSQL trip;
+    
     public BookingsSQL() {}
     public BookingsSQL(String type, Double price, String confirmationNumber, UserSQL user) {
         this.bookingType = type;
@@ -55,6 +59,16 @@ public class BookingsSQL {
     public void setUser(UserSQL user) { this.user = user; }
     public BudgetSQL getBudgetExpense() { return budgetExpense; }
     public void setBudgetExpense(BudgetSQL budgetExpense) { this.budgetExpense = budgetExpense; }
+	
+    public TripsSQL getTrip() {
+		return trip;
+	}
+	public void setTrip(TripsSQL trip) {
+		this.trip = trip;
+	}
+	public UserSQL getUser() {
+		return user;
+	}
     
     
 }

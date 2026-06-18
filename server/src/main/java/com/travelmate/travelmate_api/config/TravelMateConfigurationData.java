@@ -23,7 +23,7 @@ import com.travelmate.travelmate_api.repository.sql.TripSQLRepository;
 @Component
 public class TravelMateConfigurationData implements CommandLineRunner {
 	
-    private final DestinationSQLRepository destinationRepository;
+	private final DestinationSQLRepository destinationRepository;
     private final TripSQLRepository tripRepository;
     private final Firestore firestore;
     private final ResourceLoader resourceLoader;
@@ -42,7 +42,6 @@ public class TravelMateConfigurationData implements CommandLineRunner {
     public void run(String... args) throws Exception {
         System.out.println("🚀 Initializing Dynamic Multi-Cloud JSON Seeding Engine...");
 
-        // Instantiate Jackson ObjectMapper with Java 8 Time capabilities (for LocalDate mappings)
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
 
@@ -53,14 +52,11 @@ public class TravelMateConfigurationData implements CommandLineRunner {
             System.out.println("📂 Reading destinations.json catalog source...");
             InputStream destStream = resourceLoader.getResource("classpath:data/destinations.json").getInputStream();
             
-            // Parse directly from file streams into object list representations
             List<DestinationSQL> externalDestinations = mapper.readValue(destStream, new TypeReference<List<DestinationSQL>>(){});
             
             for (DestinationSQL dest : externalDestinations) {
-                // Persistent save to Cloud SQL
                 DestinationSQL savedSql = destinationRepository.save(dest);
                 
-                // Construct mirror replica for Firestore NoSQL collection mapping
                 DestinationDoc destDoc = new DestinationDoc();
                 destDoc.setId("DEST-" + savedSql.getId());
                 destDoc.setName(savedSql.getName());
@@ -68,39 +64,38 @@ public class TravelMateConfigurationData implements CommandLineRunner {
                 destDoc.setImage(savedSql.getImage());
                 destDoc.setActivities(savedSql.getActivities());
                 
-                // Write to Firestore asynchronously
                 firestore.collection("destinations").document(destDoc.getId()).set(destDoc).get();
             }
             System.out.println("✅ Symmetrically synchronized global destinations catalog items.");
         }
 
         // ==========================================
-        // 2. DYNAMIC SEEDING: TRIPS
+        // 2. DYNAMIC SEEDING: TRIPS (MODIFIED FOR PLURAL SCHEMA)
         // ==========================================
         if (tripRepository.count() == 0) {
             System.out.println("📂 Reading trips.json scheduling source...");
             InputStream tripStream = resourceLoader.getResource("classpath:data/trips.json").getInputStream();
             
-            // Map JSON array records onto loose data transfer templates
             List<TripDoc> externalTrips = mapper.readValue(tripStream, new TypeReference<List<TripDoc>>(){});
             
             for (TripDoc doc : externalTrips) {
-                // Query database dynamically to link existing foreign-key constraints safely
-                destinationRepository.findAll().stream()
-                    .filter(d -> d.getName().equalsIgnoreCase(doc.getDestinationName()))
-                    .findFirst()
-                    .ifPresent(matchedDest -> {
-                        TripsSQL tripSql = new TripsSQL();
-                        tripSql.setDestination(matchedDest);
-                        tripSql.setStartDate(LocalDate.parse(doc.getStartDate()));
-                        tripSql.setEndDate(LocalDate.parse(doc.getEndDate()));
-                        tripSql.setMaxTravelers(doc.getMaxTravelers());
-                        
-                        // Save relation inside Cloud SQL
-                        tripRepository.save(tripSql);
-                    });
+            	destinationRepository.findAll().stream()
+                .filter(d -> d.getName().equalsIgnoreCase(doc.getDestinationName()))
+                .findFirst()
+                .ifPresent(matchedDest -> {
+                    TripsSQL tripSql = new TripsSQL();
+                    tripSql.setStartDate(LocalDate.parse(doc.getStartDate()));
+                    tripSql.setEndDate(LocalDate.parse(doc.getEndDate()));
+                    tripSql.setMaxTravelers(doc.getMaxTravelers());
+                    
+                    // 🚀 THE FIX FOR SEEDER: Save the parent trip first to get an database ID generated
+                    TripsSQL savedTrip = tripRepository.save(tripSql);
+                    
+                    // Now link the child to the saved parent record row
+                    matchedDest.setTrip(savedTrip);
+                    destinationRepository.save(matchedDest); // Update the child entity safely!
+                });
 
-                // Save configuration entry to Firestore collection paths
                 firestore.collection("trips").document(doc.getTripId()).set(doc).get();
             }
             System.out.println("✅ Symmetrically synchronized dynamic user trip records.");

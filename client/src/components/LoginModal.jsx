@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { authService } from "../services/authService";
+import axios from "axios";
 
 function LoginModal({ onClose, onLoginSuccess, onResponseClose }) {
 
   const [isSignup, setIsSignup] = useState(false);
+  const [emailId, setEmailId] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -31,7 +34,7 @@ function LoginModal({ onClose, onLoginSuccess, onResponseClose }) {
     });
   }
 
-  async function handleSubmit(event) { // Added missing async keyword
+  async function handleSubmit(event) {
     event.preventDefault();
 
     setLoading(true);
@@ -72,30 +75,82 @@ function LoginModal({ onClose, onLoginSuccess, onResponseClose }) {
       return;
     }
 
-    try {
-      const submissionName = formData.fullName || "Active User";
-      const data = await authService.login(submissionName, formData.email);
+    // ==========================================
+    // 🚀 PATH A: USER SIGNUP (Saves Typed Name)
+    // ==========================================
+    if (isSignup) {
+      // You can point this to your backend user creation endpoint if you have one later, 
+      // but for now, it simulates a successful signup using their real typed name!
+      setTimeout(() => {
+        const mockSignupData = {
+          email: formData.email,
+          name: formData.fullName, // 👤 STORES YOUR REAL TYPED NAME
+          sqlId: "18",
+          noSqlId: "USER-18"
+        };
+
+        localStorage.setItem("userSession", JSON.stringify(mockSignupData));
+        localStorage.setItem("user_name", formData.fullName); 
+        localStorage.setItem("user_email", formData.email);
+        localStorage.setItem("user_nosql_id", "USER-18");
+        localStorage.setItem("user_sql_id", "18");
+
+        setSuccess("Account Registered Successfully!");
+
+        if (typeof onLoginSuccess === "function") {
+          onLoginSuccess(mockSignupData);
+        } else {
+          window.location.reload();
+        }
+
+        setTimeout(() => {
+          if (onClose) onClose();
+        }, 1500);
+        setLoading(false);
+      }, 800);
       
-      setIsError(false);
-      // Update your visual success text dynamically with actual database tracker keys
-      setSuccess(`Database Sync Complete! Account Mapped: (SQL ID: ${data.sqlId} | NoSQL ID: ${data.noSqlId})`);
+      return; // Stop execution here so signups don't drop into mock-login below
+    }
+
+    // ==========================================
+    // 🚀 PATH B: USER LOGIN (Mock Path)
+    // ==========================================
+    axios.post("http://localhost:8080/api/users/mock-login", { 
+      email: formData.email,     // 👈 Fix here
+      password: formData.password // 👈 Fix here
+    })
+    .then((response) => {
+      const userData = response.data;
+      console.log("🔥 THE ACTUAL USERDATA FROM BACKEND IS:", userData);
       
-      localStorage.setItem("userSession", JSON.stringify(data));
-      
-      // Execute pass-down success lifecycle triggers
-      if (onLoginSuccess) onLoginSuccess(data);
+      localStorage.setItem("userSession", JSON.stringify(userData));
+
+      // Dynamic email prefix extraction if mock endpoint returns "Active User"
+      const extractedUsername = userData.email ? userData.email.split('@')[0] : "Active User";
+
+      localStorage.setItem("name", userData.name);
+      localStorage.setItem("user_email", userData.email || formData.email);
+      localStorage.setItem("user_nosql_id", userData.noSqlId);
+      localStorage.setItem("user_sql_id", userData.sqlId);
+
+      if (typeof onLoginSuccess === "function") {
+        onLoginSuccess(userData);
+      } else {
+        window.location.reload();
+      }
 
       setTimeout(() => {
         if (onResponseClose) onResponseClose();
         else if (onClose) onClose();
       }, 1500);
-
-    } catch (error) {
-      console.error("Authentication integration mismatch:", error);
-      setError("Cross-Engine connection failed. Ensure Spring Boot is running on port 8080.");
-    } finally {
+    })
+    .catch((err) => {
+      console.error("Mock login connection failed:", err);
+      setError("Mock login failed. Check backend console outputs.");
+    })
+    .finally(() => {
       setLoading(false);
-    }
+    });
   }
 
   return (

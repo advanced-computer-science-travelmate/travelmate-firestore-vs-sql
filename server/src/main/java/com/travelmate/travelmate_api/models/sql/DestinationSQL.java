@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,7 +20,7 @@ public class DestinationSQL {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     // Added to support your teammate's UI template fields
@@ -33,6 +34,14 @@ public class DestinationSQL {
     @CollectionTable(name = "destination_activities", joinColumns = @JoinColumn(name = "destination_id"))
     @Column(name = "activity")
     private List<String> activities;
+    
+    @ManyToOne
+    @JoinColumn(name = "trip_id", nullable = true)
+    private TripsSQL trip;
+
+    // 🚀 ADD THIS COLUMN TO TRACK VOTES DYNAMICALLY PER TRIP POLL
+    @Column(name = "votes", columnDefinition = "int default 0")
+    private int votes;
 
     public DestinationSQL() {}
 
@@ -47,4 +56,21 @@ public class DestinationSQL {
     public void setImage(String image) { this.image = image; }
     public List<String> getActivities() { return activities; }
     public void setActivities(List<String> activities) { this.activities = activities; }
+
+	public TripsSQL getTrip() {
+		return trip;
+	}
+
+	public void setTrip(TripsSQL trip) {
+		this.trip = trip;
+	}
+
+	public int getVotes() {
+		return votes;
+	}
+
+	public void setVotes(int votes) {
+		this.votes = votes;
+	}
+    
 }

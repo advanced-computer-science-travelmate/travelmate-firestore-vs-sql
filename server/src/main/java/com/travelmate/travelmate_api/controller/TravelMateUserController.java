@@ -37,14 +37,26 @@ public class TravelMateUserController {
     
     @PostMapping("/mock-login")
     public Map<String, String> handleDynamicLogin(@RequestBody Map<String, String> loginRequest) throws Exception {
-        String fullName = loginRequest.get("name");
         String emailAddress = loginRequest.get("email");
+        String fullName = loginRequest.get("name");
 
-        // Structural Generation for Google Cloud SQL
+        // 🚀 THE FIX: If name is null or missing (like on a direct login step), 
+        // dynamically extract the prefix from the email address as a fallback name!
+        if (fullName == null || fullName.trim().isEmpty()) {
+            if (emailAddress != null && emailAddress.contains("@")) {
+                fullName = emailAddress.split("@")[0];
+            } else {
+                fullName = "Active User";
+            }
+        }
+
+        final String finalName = fullName; // Variable required for the stream closure below
+
+        // Structural Generation or Matching for Google Cloud SQL
         UserSQL sqlUser = userSqlRepository.findAll().stream()
                 .filter(u -> u.getEmail().equalsIgnoreCase(emailAddress))
                 .findFirst()
-                .orElseGet(() -> userSqlRepository.save(new UserSQL(fullName, emailAddress)));
+                .orElseGet(() -> userSqlRepository.save(new UserSQL(finalName, emailAddress)));
 
         // Generate matching String ID for Firestore NoSQL Collection Document
         String firestoreId = "USER-" + sqlUser.getId();
@@ -66,7 +78,7 @@ public class TravelMateUserController {
             "email", emailAddress
         );
     }
-
+    
     @PostMapping("/sql")
     public ResponseEntity<UserSQL> createUserSQL(@RequestBody UserSQL user) {
         return ResponseEntity.ok(userSqlRepository.save(user));

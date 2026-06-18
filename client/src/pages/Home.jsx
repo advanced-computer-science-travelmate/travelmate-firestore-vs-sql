@@ -9,6 +9,7 @@ function Home({ isLoggedIn, onLogin, onLogout }) {
   const [showLogin, setShowLogin] = useState(false);
   const [dbStats, setDbStats] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [latestBenchmark, setLatestBenchmark] = useState(null);
 
   const handleRunTest = async () => {
     setIsTesting(true);
@@ -30,11 +31,20 @@ function Home({ isLoggedIn, onLogin, onLogout }) {
 
   useEffect(() => {
   // Query your live cross-engine benchmark tracking endpoint
-  axios.get("http://localhost:8080/api/benchmarks/latest-run")
-    .then(res => setDbStats(res.data))
-    .catch(() => {
-      // Clean fallback display numbers if no test has been executed yet
-      setDbStats({ firestoreTime: "115.10ms", sqlTime: "477.30ms", winner: "Cloud Firestore" });
+ axios.get("http://localhost:8080/api/benchmarks/latest-run")
+    .then((response) => {
+      // Set your benchmark states cleanly if the database record passes
+      setLatestBenchmark(response.data); 
+    })
+    .catch((error) => {
+      console.error("Benchmark telemetry retrieval dropped:", error);
+      // 🚀 THE FRONTEND PROTECTOR: Set a clean empty object fallback state 
+      // so your interface components don't crash waiting for the properties
+      setLatestBenchmark({
+        firestoreWriteMs: 0,
+        cloudSqlWriteMs: 0,
+        executionSummary: "No active benchmark profiles loaded from multi-cloud log records."
+      });
     });
 }, []);
 

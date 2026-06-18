@@ -93,4 +93,5 @@ public class TravelMateDestinationController {
 
         return ResponseEntity.ok(hotelList);
     }
+    
 }

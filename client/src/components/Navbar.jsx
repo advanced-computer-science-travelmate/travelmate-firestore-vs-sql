@@ -2,15 +2,39 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 function Navbar({ onLoginClick, onLogout, isLoggedIn, currentUser }) {
-
   const location = useLocation();
   const [hasSession, setHasSession] = useState(false);
+  const [displayName, setDisplayName] = useState("");
 
   // Sync state with local storage on render/route changes
   useEffect(() => {
-    const session = localStorage.getItem("userSession");
-    setHasSession(!!session || isLoggedIn);
-  }, [location, isLoggedIn]);
+    const sessionStr = localStorage.getItem("userSession");
+
+    console.log("DEBUG - Raw Session String from Storage:", sessionStr);
+    
+    if (sessionStr) {
+    try {
+        const sessionObj = JSON.parse(sessionStr);
+        console.log("DEBUG - Parsed Session Object Keys:", Object.keys(sessionObj));
+        console.log("DEBUG - Full Parsed Session Object Contents:", sessionObj);
+
+        setHasSession(true);
+        
+        // Let's check for every possible variant of the username key
+        const detectedName = localStorage.getItem("name");
+        setDisplayName(detectedName);
+      } catch (err) {
+        console.error("DEBUG - Failed to parse session JSON:", err);
+        setDisplayName("Active User");
+      }
+    } else if (isLoggedIn) {
+      setHasSession(true);
+      setDisplayName(currentUser?.name || "Active User");
+    } else {
+      setHasSession(false);
+      setDisplayName("");
+    }
+  }, [location, isLoggedIn, currentUser]);
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
@@ -19,37 +43,23 @@ function Navbar({ onLoginClick, onLogout, isLoggedIn, currentUser }) {
           <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
             T
           </div>
-
           <h1 className="text-2xl font-bold text-slate-900">
             Travel<span className="text-blue-600">Mate</span>
           </h1>
         </Link>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-700">
-          <Link to="/" className="hover:text-blue-600">
-            Home
-          </Link>
-
-          <Link to="/trips" className="hover:text-blue-600">
-            Trips
-          </Link>
-
-          <Link to="/destinations" className="hover:text-blue-600">
-            Destinations
-          </Link>
-
-          <Link to="/compare-db" className="hover:text-blue-600">
-            Compare DB
-          </Link>
+          <Link to="/" className="hover:text-blue-600">Home</Link>
+          <Link to="/trips" className="hover:text-blue-600">Trips</Link>
+          <Link to="/destinations" className="hover:text-blue-600">Destinations</Link>
+          <Link to="/compare-db" className="hover:text-blue-600">Compare DB</Link>
         </div>
 
-        {/* Wrapper to group the Name and the Auth Button together side-by-side */}
         <div className="flex items-center gap-4">
-          
-          {/* It checks hasSession first, then safely reads the name string */}
-          {hasSession && currentUser && (
+          {/* 🚀 FIXED: Checks session and displays the synchronized dynamic state string cleanly */}
+          {hasSession && displayName && (
             <span className="text-sm font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-              👤 {currentUser.name || "Active User"}
+              👤 {displayName}
             </span>
           )}
 
