@@ -7,19 +7,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.catalina.connector.Response;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.WriteResult;
 import com.travelmate.travelmate_api.models.nosql.TripDoc;
 import com.travelmate.travelmate_api.models.sql.DestinationSQL;
 import com.travelmate.travelmate_api.models.sql.TripsSQL;
@@ -36,19 +36,20 @@ public class TravelMateTripController {
     private final DestinationSQLRepository destinationSqlRepository;
     private final TravelMateService travelMateService;
     private final Firestore firestore;
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    public TravelMateTripController(TripSQLRepository tripSqlRepository, DestinationSQLRepository destinationSqlRepository, 
-    								TravelMateService travelMateService, Firestore firestore) {
+    public TravelMateTripController(TripSQLRepository tripSqlRepository, 
+                                    DestinationSQLRepository destinationSqlRepository, 
+                                    TravelMateService travelMateService, 
+                                    Firestore firestore) {
         this.tripSqlRepository = tripSqlRepository;
         this.destinationSqlRepository = destinationSqlRepository;
         this.travelMateService = travelMateService;
         this.firestore = firestore;
     }
     
-    private final RestTemplate restTemplate = new RestTemplate();
-    
     @PostMapping("/create")
-    public ResponseEntity<String> createTrip(@RequestBody Map<String, Object> payload) throws Exception {
+    public ResponseEntity<?> createTrip(@RequestBody Map<String, Object> payload) throws Exception {
         
         String destinationName = (String) payload.get("destinationName");
         String startDateStr = (String) payload.get("startDate");
@@ -56,60 +57,50 @@ public class TravelMateTripController {
         int maxTravelers = (Integer) payload.get("maxTravelers");
         
         String passedUserId = payload.containsKey("userId") ? (String) payload.get("userId") : "USER-ACTIVE-101";
-        String passedUserName = payload.containsKey("userName") ? (String) payload.get("userName") : "Siddharth D";
         
-        String url = "https://restcountries.com/v3.1/region/europe?fields=name";
-        List<Map<String, Object>> apiResponse = restTemplate.getForObject(url, List.class);
-        
-        // Extract the common English names of all European countries dynamically
-        List<String> europeanCountryNames = new ArrayList<>();
-        if (apiResponse != null) {
-            for (Map<String, Object> countryData : apiResponse) {
-                Map<String, Object> nameObj = (Map<String, Object>) countryData.get("name");
-                if (nameObj != null && nameObj.containsKey("common")) {
-                    europeanCountryNames.add((String) nameObj.get("common"));
-                }
-            }
+        // 🚀 PROXIED API EXTERNAL ROUTING WITH RESILIENT HEADERS
+        List<Map<String, Object>> apiResponse = null;
+        try {
+            // FIXED: Added fields parameter to retrieve country codes and flag assets properly
+            String url = "https://restcountries.com/v3.1/region/europe?fields=name,flags,cca2";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            
+            ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
+            apiResponse = response.getBody();
+        } catch (Exception e) {
+            System.err.println("External REST Countries API unreachable. Processing local lifecycle rules: " + e.getMessage());
         }
         
         // 1. QUERY EXISTING MASTER CATALOG FOR DATA INTEGRITY
-        DestinationSQL matchedDest = destinationSqlRepository.findAll().stream()
-                .filter(d -> d.getName().equalsIgnoreCase(destinationName))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Destination not found in catalog database: " + destinationName));
-
         DestinationSQL foundCatalogDest = destinationSqlRepository.findAll().stream()
                 .filter(d -> d.getName().equalsIgnoreCase(destinationName))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Destination not found: " + destinationName));
+                .orElseThrow(() -> new RuntimeException("Destination not found in database: " + destinationName));
         
         TripsSQL sqlTrip = new TripsSQL();
         sqlTrip.setStartDate(LocalDate.parse(startDateStr));
         sqlTrip.setEndDate(LocalDate.parse(endDateStr));
         sqlTrip.setMaxTravelers(maxTravelers);
         
-        sqlTrip.getDestination().add(matchedDest);
-        matchedDest.setTrip(sqlTrip);
+        sqlTrip.getDestination().add(foundCatalogDest);
+        foundCatalogDest.setTrip(sqlTrip);
         
-        TripsSQL savedTrip = tripSqlRepository.save(sqlTrip); // Save parent first!
-        foundCatalogDest.setTrip(savedTrip);
-        destinationSqlRepository.save(foundCatalogDest);
-
         // 2. CONSTRUCT NON-RELATIONAL DATA (Firestore Document)
         TripDoc noSqlTrip = new TripDoc();
-        // Generate a clean string tracking ID matching your collection path blueprint
         noSqlTrip.setTripId("TRIP-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         noSqlTrip.setDestinationName(destinationName);
         noSqlTrip.setStartDate(startDateStr);
         noSqlTrip.setEndDate(endDateStr);
-        noSqlTrip.setUserId(passedUserId); // Wire this dynamically later once your auth module is fully bound
+        noSqlTrip.setUserId(passedUserId); 
 
-        // 3. PASS TO SYNCHRONIZED TRANSACTION AGENT
-        travelMateService.createTripInBothSystems(sqlTrip, noSqlTrip);
+        // 3. PASS TO SYNCHRONIZED TRANSACTION AGENT PERSISTENCE
+        // We do a single unified write via the service agent to maintain graph stability!
+        TripsSQL savedSqlTrip = travelMateService.createTripInBothSystems(sqlTrip, noSqlTrip);
         
-        firestore.collection("trips").document(noSqlTrip.getTripId()).set(noSqlTrip).get();
-        
-        return ResponseEntity.ok("Successfully synchronized trip lifecycle records across both database engines!");
+        // 🚀 BYPASS THE BROKEN WRAPPER: Return the real saved object containing your generated database table primary keys!
+        return ResponseEntity.ok(savedSqlTrip);
     }
 
     // --- CLOUD SQL PATH ---
@@ -141,7 +132,7 @@ public class TravelMateTripController {
         return ResponseEntity.ok(list);
     }
     
- // ==========================================
+    // ==========================================
     // 🗳️ GROUP VOTING INTEGRATION ENDPOINTS
     // ==========================================
 
@@ -154,7 +145,6 @@ public class TravelMateTripController {
         response.put("id", trip.getId());
         response.put("title", "Vote for " + (trip.getDestination().isEmpty() ? "Destinations" : trip.getDestination().get(0).getName()));
         
-        // Map destinations to match what the React option template expects
         List<Map<String, Object>> options = trip.getDestination().stream().map(d -> {
             Map<String, Object> opt = new HashMap<>();
             opt.put("id", d.getId());
@@ -183,18 +173,14 @@ public class TravelMateTripController {
             DestinationSQL pollOption = new DestinationSQL();
             pollOption.setName(name);
             pollOption.setVotes(0);
-            pollOption.setTrip(trip); // Bind back to parent structural key
+            pollOption.setTrip(trip); 
             
             destinationSqlRepository.save(pollOption);
         }
 
-        return getTripPoll(tripId); // Return updated poll layout shape
+        return getTripPoll(tripId);
     }
 
-    /**
-     * 3. CAST A VOTE SECURELY (INCREMENT TRANSACTION)
-     * Finds the targeted option record line and safely increments its current integer state.
-     */
     @PostMapping("/{tripId}/destinations/{destinationId}/vote")
     public ResponseEntity<Map<String, Object>> castVote(
             @PathVariable Long tripId,
@@ -204,10 +190,57 @@ public class TravelMateTripController {
         DestinationSQL destination = destinationSqlRepository.findById(destinationId)
             .orElseThrow(() -> new RuntimeException("Target voting option row context not found"));
 
-        // Safe increment operation
         destination.setVotes(destination.getVotes() + 1);
         destinationSqlRepository.save(destination);
 
-        return getTripPoll(tripId); // Return fresh state instantly to push re-render animations
+        return getTripPoll(tripId); 
+    }
+    
+    // ==========================================
+    // 🚀 DUAL-PERSISTENCE ITINERARY PLACES SYNC
+    // ==========================================
+    @PutMapping("/{tripId}/places")
+    public ResponseEntity<?> updateTripPlaces(
+            @PathVariable Long tripId, 
+            @RequestBody Map<String, Object> fullSelectedMap) {
+        
+        Map<String, Object> metrics = new HashMap<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // 1. GOOGLE CLOUD SQL OVERWRITEPersist (Using Correct tripSqlRepository Field)
+        long sqlStart = System.currentTimeMillis();
+        try {
+            TripsSQL trip = tripSqlRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip profile not found inside SQL Instance"));
+            
+            String jsonString = objectMapper.writeValueAsString(fullSelectedMap);
+            trip.setSelectedPlacesJson(jsonString);
+            
+            tripSqlRepository.save(trip); 
+            
+            metrics.put("cloudSqlWriteMs", (System.currentTimeMillis() - sqlStart));
+            metrics.put("sqlStatus", "SUCCESS");
+        } catch (Exception e) {
+            metrics.put("sqlStatus", "FAILED");
+            metrics.put("sqlError", e.getMessage());
+        }
+
+        // 2. GOOGLE CLOUD FIRESTORE UPDATE (Using Pre-injected Context Instance)
+        long firestoreStart = System.currentTimeMillis();
+        try {
+            ApiFuture<WriteResult> future = this.firestore.collection("trips")
+                    .document(String.valueOf(tripId))
+                    .update("selectedPlacesByDay", fullSelectedMap);
+
+            future.get();
+            
+            metrics.put("firestoreWriteMs", (System.currentTimeMillis() - firestoreStart));
+            metrics.put("firestoreStatus", "SUCCESS");
+        } catch (Exception e) {
+            metrics.put("firestoreStatus", "FAILED");
+            metrics.put("firestoreError", e.getMessage());
+        }
+
+        return ResponseEntity.ok(metrics);
     }
 }

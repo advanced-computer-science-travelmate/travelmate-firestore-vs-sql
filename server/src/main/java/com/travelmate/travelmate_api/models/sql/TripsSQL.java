@@ -33,6 +33,15 @@ public class TripsSQL {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+    
+    @Column(name = "adults")
+    private Integer adults;
+
+    @Column(name = "children")
+    private Integer children;
+
+    @Column(name = "rooms")
+    private Integer rooms;
 
     @Column(name = "max_travelers")
     private Integer maxTravelers;
@@ -43,6 +52,9 @@ public class TripsSQL {
     
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingsSQL> bookings = new ArrayList<>();
+    
+    @Column(name = "selected_places", columnDefinition = "TEXT")
+    private String selectedPlaces;
 
     public TripsSQL() {}
 
@@ -75,6 +87,39 @@ public class TripsSQL {
 		this.destination = destination;
 	}
 	
-	
+	 public String getSelectedPlacesJson() { return selectedPlaces; }
+	    public void setSelectedPlacesJson(String selectedPlaces) { this.selectedPlaces = selectedPlaces; }
+
+		public Integer getAdults() {
+			return adults;
+		}
+
+		public void setAdults(Integer adults) {
+			this.adults = adults;
+		}
+
+		public Integer getChildren() {
+			return children;
+		}
+
+		public void setChildren(Integer children) {
+			this.children = children;
+		}
+
+		public Integer getRooms() {
+			return rooms;
+		}
+
+		public void setRooms(Integer rooms) {
+			this.rooms = rooms;
+		}
+
+		public String getSelectedPlaces() {
+			return selectedPlaces;
+		}
+
+		public void setSelectedPlaces(String selectedPlaces) {
+			this.selectedPlaces = selectedPlaces;
+		}
     
 }

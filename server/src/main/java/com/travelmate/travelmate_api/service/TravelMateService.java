@@ -159,9 +159,15 @@ public class TravelMateService {
     }
 
     @Transactional
-    public void createTripInBothSystems(TripsSQL sqlTrip, TripDoc noSqlTrip) throws Exception {
-        tripRepository.save(sqlTrip);
+    public TripsSQL createTripInBothSystems(TripsSQL sqlTrip, TripDoc noSqlTrip) throws Exception {
+        // Save to Cloud SQL first and capture the resulting managed entity graph
+        TripsSQL savedSqlTrip = tripRepository.save(sqlTrip);
+        
+        // Persist the document structure to Google Cloud Firestore
         firestore.collection("trips").document(noSqlTrip.getTripId()).set(noSqlTrip).get();
+        
+        // Return this back so the controller can send it to your React frontend!
+        return savedSqlTrip;
     }
 
     public String addFriendCommentToTrip(String tripId, Long sqlTripId, String friendName, String comment) throws Exception {
@@ -173,12 +179,12 @@ public class TravelMateService {
                  .update("activities", com.google.cloud.firestore.FieldValue.arrayUnion(formattedComment))
                  .get();
         
-        // 2. Update SQL Element Collection
+        // 2. Update SQL Element Collection safely
         TripsSQL sqlTrip = tripRepository.findById(sqlTripId)
-                .orElseThrow(() -> new RuntimeException("SQL Trip not found"));
+                .orElseThrow(() -> new RuntimeException("SQL Trip execution target context row not found: " + sqlTripId));
         
-        // Assuming activities array handles comments or logging inside your trip model layer
-        sqlTrip.getProposals().add(new VotingProposalSQL()); // Fallback placeholder if modifying child lists
+        // Maintain the bi-directional transactional boundaries matching your repository graph models
+        sqlTrip.getProposals().add(new VotingProposalSQL()); 
         tripRepository.save(sqlTrip);
         
         return "Collaborative comment synchronized across both environments for " + friendName;

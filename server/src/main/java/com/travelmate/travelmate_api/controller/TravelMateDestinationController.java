@@ -68,7 +68,7 @@ public class TravelMateDestinationController {
 
     @GetMapping("/europe")
     public ResponseEntity<?> getEuropeanDestinations() {
-    	String url = "https://restcountries.com/v3.1/region/europe?fields=name,flags,capital";
+    	String url = "https://restcountries.com/v3.1/region/europe?fields=name,flags,cca2";
         
         try {
             // 1. Set up standard browser user agent headers to pass proxy filters

@@ -46,6 +46,9 @@ public class DestinationSQL {
     @Column(name = "votes", columnDefinition = "int default 0")
     private int votes;
 
+    @Column(name = "country_code", length = 5)
+    private String countryCode;
+    
     public DestinationSQL() {}
 
     // Getters and Setters
@@ -75,5 +78,15 @@ public class DestinationSQL {
 	public void setVotes(int votes) {
 		this.votes = votes;
 	}
+
+	public String getCountryCode() {
+		return countryCode;
+	}
+
+	public void setCountryCode(String countryCode) {
+		this.countryCode = countryCode;
+	}
+	
+	
     
 }
