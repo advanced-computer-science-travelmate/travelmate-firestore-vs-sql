@@ -1,10 +1,202 @@
 [
-  {
-    "tripId": "TRIP-CHAMONIX-501",
-    "destinationName": "Chamonix Adventure",
-    "startDate": "2026-07-10",
-    "endDate": "2026-07-17",
-    "userId": "USER-ARJUN-101",
-    "maxTravelers": 2
-  }
+{
+"tripId": "TRIP-DE-001",
+"destinationName": "Germany",
+"startDate": "2026-07-01",
+"endDate": "2026-07-07",
+"userId": "USER-001",
+"countryFlag": "🇩🇪",
+"countryCode": "DE",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-FR-002",
+"destinationName": "France",
+"startDate": "2026-07-10",
+"endDate": "2026-07-16",
+"userId": "USER-002",
+"countryFlag": "🇫🇷",
+"countryCode": "FR",
+"maxTravelers": 3
+},
+{
+"tripId": "TRIP-IT-003",
+"destinationName": "Italy",
+"startDate": "2026-07-20",
+"endDate": "2026-07-27",
+"userId": "USER-003",
+"countryFlag": "🇮🇹",
+"countryCode": "IT",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-ES-004",
+"destinationName": "Spain",
+"startDate": "2026-08-01",
+"endDate": "2026-08-08",
+"userId": "USER-004",
+"countryFlag": "🇪🇸",
+"countryCode": "ES",
+"maxTravelers": 4
+},
+{
+"tripId": "TRIP-PT-005",
+"destinationName": "Portugal",
+"startDate": "2026-08-10",
+"endDate": "2026-08-15",
+"userId": "USER-005",
+"countryFlag": "🇵🇹",
+"countryCode": "PT",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-NL-006",
+"destinationName": "Netherlands",
+"startDate": "2026-08-20",
+"endDate": "2026-08-25",
+"userId": "USER-006",
+"countryFlag": "🇳🇱",
+"countryCode": "NL",
+"maxTravelers": 3
+},
+{
+"tripId": "TRIP-BE-007",
+"destinationName": "Belgium",
+"startDate": "2026-09-01",
+"endDate": "2026-09-06",
+"userId": "USER-007",
+"countryFlag": "🇧🇪",
+"countryCode": "BE",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-AT-008",
+"destinationName": "Austria",
+"startDate": "2026-09-10",
+"endDate": "2026-09-16",
+"userId": "USER-008",
+"countryFlag": "🇦🇹",
+"countryCode": "AT",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-CH-009",
+"destinationName": "Switzerland",
+"startDate": "2026-09-20",
+"endDate": "2026-09-27",
+"userId": "USER-009",
+"countryFlag": "🇨🇭",
+"countryCode": "CH",
+"maxTravelers": 4
+},
+{
+"tripId": "TRIP-GR-010",
+"destinationName": "Greece",
+"startDate": "2026-10-01",
+"endDate": "2026-10-07",
+"userId": "USER-010",
+"countryFlag": "🇬🇷",
+"countryCode": "GR",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-HR-011",
+"destinationName": "Croatia",
+"startDate": "2026-10-10",
+"endDate": "2026-10-16",
+"userId": "USER-011",
+"countryFlag": "🇭🇷",
+"countryCode": "HR",
+"maxTravelers": 3
+},
+{
+"tripId": "TRIP-NO-012",
+"destinationName": "Norway",
+"startDate": "2026-10-20",
+"endDate": "2026-10-27",
+"userId": "USER-012",
+"countryFlag": "🇳🇴",
+"countryCode": "NO",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-SE-013",
+"destinationName": "Sweden",
+"startDate": "2026-11-01",
+"endDate": "2026-11-07",
+"userId": "USER-013",
+"countryFlag": "🇸🇪",
+"countryCode": "SE",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-DK-014",
+"destinationName": "Denmark",
+"startDate": "2026-11-10",
+"endDate": "2026-11-15",
+"userId": "USER-014",
+"countryFlag": "🇩🇰",
+"countryCode": "DK",
+"maxTravelers": 3
+},
+{
+"tripId": "TRIP-FI-015",
+"destinationName": "Finland",
+"startDate": "2026-11-20",
+"endDate": "2026-11-27",
+"userId": "USER-015",
+"countryFlag": "🇫🇮",
+"countryCode": "FI",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-IE-016",
+"destinationName": "Ireland",
+"startDate": "2026-12-01",
+"endDate": "2026-12-06",
+"userId": "USER-016",
+"countryFlag": "🇮🇪",
+"countryCode": "IE",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-CZ-017",
+"destinationName": "Czech Republic",
+"startDate": "2026-12-10",
+"endDate": "2026-12-16",
+"userId": "USER-017",
+"countryFlag": "🇨🇿",
+"countryCode": "CZ",
+"maxTravelers": 3
+},
+{
+"tripId": "TRIP-PL-018",
+"destinationName": "Poland",
+"startDate": "2026-12-20",
+"endDate": "2026-12-27",
+"userId": "USER-018",
+"countryFlag": "🇵🇱",
+"countryCode": "PL",
+"maxTravelers": 2
+},
+{
+"tripId": "TRIP-HU-019",
+"destinationName": "Hungary",
+"startDate": "2027-01-05",
+"endDate": "2027-01-10",
+"userId": "USER-019",
+"countryFlag": "🇭🇺",
+"countryCode": "HU",
+"maxTravelers": 4
+},
+{
+"tripId": "TRIP-IS-020",
+"destinationName": "Iceland",
+"startDate": "2027-01-15",
+"endDate": "2027-01-22",
+"userId": "USER-020",
+"countryFlag": "🇮🇸",
+"countryCode": "IS",
+"maxTravelers": 2
+}
 ]

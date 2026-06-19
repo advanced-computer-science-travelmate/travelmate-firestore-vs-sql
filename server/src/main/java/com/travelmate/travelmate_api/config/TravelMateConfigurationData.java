@@ -38,69 +38,87 @@ public class TravelMateConfigurationData implements CommandLineRunner {
         this.resourceLoader = resourceLoader;
     }
 
+
     @Override
-    public void run(String... args) throws Exception {
-        System.out.println("🚀 Initializing Dynamic Multi-Cloud JSON Seeding Engine...");
+public void run(String... args) throws Exception {
+    System.out.println("🚀 Initializing Dynamic Multi-Cloud JSON Seeding Engine...");
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
 
-        // ==========================================
-        // 1. DYNAMIC SEEDING: DESTINATIONS
-        // ==========================================
-        if (destinationRepository.count() == 0) {
-            System.out.println("📂 Reading destinations.json catalog source...");
-            InputStream destStream = resourceLoader.getResource("classpath:data/destinations.json").getInputStream();
-            
-            List<DestinationSQL> externalDestinations = mapper.readValue(destStream, new TypeReference<List<DestinationSQL>>(){});
-            
-            for (DestinationSQL dest : externalDestinations) {
-                DestinationSQL savedSql = destinationRepository.save(dest);
-                
-                DestinationDoc destDoc = new DestinationDoc();
-                destDoc.setId("DEST-" + savedSql.getId());
-                destDoc.setName(savedSql.getName());
-                destDoc.setOverview(savedSql.getOverview());
-                destDoc.setImage(savedSql.getImage());
-                destDoc.setActivities(savedSql.getActivities());
-                
-                firestore.collection("destinations").document(destDoc.getId()).set(destDoc).get();
-            }
-            System.out.println("✅ Symmetrically synchronized global destinations catalog items.");
+    // ==========================================
+    // 1. ALWAYS READ DESTINATIONS JSON
+    // ==========================================
+    System.out.println("📂 Reading destinations.json catalog source...");
+    InputStream destStream = resourceLoader.getResource("classpath:data/destinations.json").getInputStream();
+
+    List<DestinationSQL> externalDestinations =
+            mapper.readValue(destStream, new TypeReference<List<DestinationSQL>>() {});
+
+    boolean shouldSeedDestinationSql = destinationRepository.count() == 0;
+
+    for (DestinationSQL dest : externalDestinations) {
+
+        // Save to SQL only if SQL table is empty
+        if (shouldSeedDestinationSql) {
+            destinationRepository.save(dest);
         }
 
-        // ==========================================
-        // 2. DYNAMIC SEEDING: TRIPS (MODIFIED FOR PLURAL SCHEMA)
-        // ==========================================
-        if (tripRepository.count() == 0) {
-            System.out.println("📂 Reading trips.json scheduling source...");
-            InputStream tripStream = resourceLoader.getResource("classpath:data/trips.json").getInputStream();
-            
-            List<TripDoc> externalTrips = mapper.readValue(tripStream, new TypeReference<List<TripDoc>>(){});
-            
-            for (TripDoc doc : externalTrips) {
-            	destinationRepository.findAll().stream()
-                .filter(d -> d.getName().equalsIgnoreCase(doc.getDestinationName()))
-                .findFirst()
-                .ifPresent(matchedDest -> {
-                    TripsSQL tripSql = new TripsSQL();
-                    tripSql.setStartDate(LocalDate.parse(doc.getStartDate()));
-                    tripSql.setEndDate(LocalDate.parse(doc.getEndDate()));
-                    tripSql.setMaxTravelers(doc.getMaxTravelers());
-                    
-                    // 🚀 THE FIX FOR SEEDER: Save the parent trip first to get an database ID generated
-                    TripsSQL savedTrip = tripRepository.save(tripSql);
-                    
-                    // Now link the child to the saved parent record row
-                    matchedDest.setTrip(savedTrip);
-                    destinationRepository.save(matchedDest); // Update the child entity safely!
-                });
+        // Always seed/update Firestore
+        DestinationDoc destDoc = new DestinationDoc();
+        destDoc.setId("DEST-" + dest.getName().toUpperCase().replace(" ", "-"));
+        destDoc.setName(dest.getName());
+        destDoc.setOverview(dest.getOverview());
+        destDoc.setImage(dest.getImage());
+        destDoc.setActivities(dest.getActivities());
 
-                firestore.collection("trips").document(doc.getTripId()).set(doc).get();
-            }
-            System.out.println("✅ Symmetrically synchronized dynamic user trip records.");
-        }
-
-        System.out.println("🎉 Multi-cloud system ingestion complete without hardcoded variables.");
+        firestore.collection("destinations")
+                .document(destDoc.getId())
+                .set(destDoc)
+                .get();
     }
-}
+
+    System.out.println("✅ Firestore destinations seeded/updated: " + externalDestinations.size());
+
+    // ==========================================
+    // 2. ALWAYS READ TRIPS JSON
+    // ==========================================
+    System.out.println("📂 Reading trips.json scheduling source...");
+    InputStream tripStream = resourceLoader.getResource("classpath:data/trips.json").getInputStream();
+
+    List<TripDoc> externalTrips =
+            mapper.readValue(tripStream, new TypeReference<List<TripDoc>>() {});
+
+    boolean shouldSeedTripSql = tripRepository.count() == 0;
+
+    for (TripDoc doc : externalTrips) {
+
+        // Save to SQL only if SQL trip table is empty
+        if (shouldSeedTripSql) {
+            destinationRepository.findAll().stream()
+                    .filter(d -> d.getName().equalsIgnoreCase(doc.getDestinationName()))
+                    .findFirst()
+                    .ifPresent(matchedDest -> {
+                        TripsSQL tripSql = new TripsSQL();
+                        tripSql.setStartDate(LocalDate.parse(doc.getStartDate()));
+                        tripSql.setEndDate(LocalDate.parse(doc.getEndDate()));
+                        tripSql.setMaxTravelers(doc.getMaxTravelers());
+
+                        TripsSQL savedTrip = tripRepository.save(tripSql);
+
+                        matchedDest.setTrip(savedTrip);
+                        destinationRepository.save(matchedDest);
+                    });
+        }
+
+        // Always seed/update Firestore
+        firestore.collection("trips")
+                .document(doc.getTripId())
+                .set(doc)
+                .get();
+    }
+
+    System.out.println("✅ Firestore trips seeded/updated: " + externalTrips.size());
+
+    System.out.println("🎉 Multi-cloud system ingestion complete.");
+}}

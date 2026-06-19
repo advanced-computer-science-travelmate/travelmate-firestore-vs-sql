@@ -1,8 +1,122 @@
 [
-  {
-    "name": "Chamonix Adventure",
-    "overview": "Explore iconic alpine architecture and famous historical galleries.",
-    "image": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800",
-    "activities": ["🏔️ Aiguille du Midi Cable Car", "🥾 Mer de Glace Trekking"]
-  }
+{
+"name": "Germany",
+"overview": "Historic cities, castles and beautiful landscapes.",
+"image": "https://images.unsplash.com/photo-1467269204594-9661b134dd2b",
+"activities": ["CITY:Berlin","CITY:Munich","CITY:Hamburg","PLACE:Brandenburg Gate","PLACE:Neuschwanstein Castle","PLACE:Cologne Cathedral"]
+},
+{
+"name": "France",
+"overview": "World famous for art, fashion and cuisine.",
+"image": "https://images.unsplash.com/photo-1431274172761-fca41d930114",
+"activities": ["CITY:Paris","CITY:Lyon","CITY:Nice","PLACE:Eiffel Tower","PLACE:Louvre Museum","PLACE:Mont Saint Michel"]
+},
+{
+"name": "Italy",
+"overview": "Ancient history, architecture and amazing food.",
+"image": "https://images.unsplash.com/photo-1525874684015-58379d421a52",
+"activities": ["CITY:Rome","CITY:Milan","CITY:Venice","PLACE:Colosseum","PLACE:Trevi Fountain","PLACE:Leaning Tower of Pisa"]
+},
+{
+"name": "Spain",
+"overview": "Beautiful beaches, nightlife and culture.",
+"image": "https://images.unsplash.com/photo-1543783207-ec64e4d95325",
+"activities": ["CITY:Madrid","CITY:Barcelona","CITY:Valencia","PLACE:Sagrada Familia","PLACE:Park Guell","PLACE:Alhambra"]
+},
+{
+"name": "Portugal",
+"overview": "Coastal beauty, history and excellent cuisine.",
+"image": "https://images.unsplash.com/photo-1513735492246-483525079686",
+"activities": ["CITY:Lisbon","CITY:Porto","CITY:Faro","PLACE:Belem Tower","PLACE:Pena Palace","PLACE:Ribeira District"]
+},
+{
+"name": "Netherlands",
+"overview": "Canals, windmills and vibrant cities.",
+"image": "https://images.unsplash.com/photo-1512470876302-972faa2aa9a4",
+"activities": ["CITY:Amsterdam","CITY:Rotterdam","CITY:Utrecht","PLACE:Rijksmuseum","PLACE:Anne Frank House","PLACE:Kinderdijk"]
+},
+{
+"name": "Belgium",
+"overview": "Medieval towns, chocolates and culture.",
+"image": "https://images.unsplash.com/photo-1491553895911-0055eca6402d",
+"activities": ["CITY:Brussels","CITY:Bruges","CITY:Antwerp","PLACE:Grand Place","PLACE:Atomium","PLACE:Canals of Bruges"]
+},
+{
+"name": "Austria",
+"overview": "Alpine scenery and classical heritage.",
+"image": "https://images.unsplash.com/photo-1516550893923-42d28e5677af",
+"activities": ["CITY:Vienna","CITY:Salzburg","CITY:Innsbruck","PLACE:Schonbrunn Palace","PLACE:Hallstatt","PLACE:Hofburg Palace"]
+},
+{
+"name": "Switzerland",
+"overview": "Mountains, lakes and picturesque villages.",
+"image": "https://images.unsplash.com/photo-1521295121783-8a321d551ad2",
+"activities": ["CITY:Zurich","CITY:Geneva","CITY:Lucerne","PLACE:Matterhorn","PLACE:Jungfraujoch","PLACE:Lake Geneva"]
+},
+{
+"name": "Greece",
+"overview": "Ancient history and beautiful islands.",
+"image": "https://images.unsplash.com/photo-1533105079780-92b9be482077",
+"activities": ["CITY:Athens","CITY:Santorini","CITY:Thessaloniki","PLACE:Acropolis","PLACE:Parthenon","PLACE:Oia Village"]
+},
+{
+"name": "Croatia",
+"overview": "Adriatic coastline and historic towns.",
+"image": "https://images.unsplash.com/photo-1555993539-1732b0258235",
+"activities": ["CITY:Zagreb","CITY:Split","CITY:Dubrovnik","PLACE:Old Town Dubrovnik","PLACE:Plitvice Lakes","PLACE:Diocletian Palace"]
+},
+{
+"name": "Norway",
+"overview": "Fjords, mountains and northern lights.",
+"image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+"activities": ["CITY:Oslo","CITY:Bergen","CITY:Tromso","PLACE:Geirangerfjord","PLACE:Preikestolen","PLACE:Trolltunga"]
+},
+{
+"name": "Sweden",
+"overview": "Scandinavian charm and natural beauty.",
+"image": "https://images.unsplash.com/photo-1509356843151-3e7d96241e11",
+"activities": ["CITY:Stockholm","CITY:Gothenburg","CITY:Malmo","PLACE:Gamla Stan","PLACE:Vasa Museum","PLACE:Drottningholm Palace"]
+},
+{
+"name": "Denmark",
+"overview": "Design, culture and coastal landscapes.",
+"image": "https://images.unsplash.com/photo-1513622470522-26c3c8a854bc",
+"activities": ["CITY:Copenhagen","CITY:Aarhus","CITY:Odense","PLACE:Tivoli Gardens","PLACE:Nyhavn","PLACE:The Little Mermaid"]
+},
+{
+"name": "Finland",
+"overview": "Lakes, forests and northern lights.",
+"image": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963",
+"activities": ["CITY:Helsinki","CITY:Turku","CITY:Rovaniemi","PLACE:Suomenlinna","PLACE:Santa Claus Village","PLACE:Market Square"]
+},
+{
+"name": "Ireland",
+"overview": "Green landscapes and rich history.",
+"image": "https://images.unsplash.com/photo-1469474968028-56623f02e42e",
+"activities": ["CITY:Dublin","CITY:Cork","CITY:Galway","PLACE:Cliffs of Moher","PLACE:Trinity College","PLACE:Ring of Kerry"]
+},
+{
+"name": "Czech Republic",
+"overview": "Historic architecture and charming towns.",
+"image": "https://images.unsplash.com/photo-1541849546-216549ae216d",
+"activities": ["CITY:Prague","CITY:Brno","CITY:Ostrava","PLACE:Prague Castle","PLACE:Charles Bridge","PLACE:Old Town Square"]
+},
+{
+"name": "Poland",
+"overview": "Rich history and vibrant cities.",
+"image": "https://images.unsplash.com/photo-1519197924294-4ba991a11128",
+"activities": ["CITY:Warsaw","CITY:Krakow","CITY:Gdansk","PLACE:Wawel Castle","PLACE:Old Town Warsaw","PLACE:Malbork Castle"]
+},
+{
+"name": "Hungary",
+"overview": "Thermal baths and historic landmarks.",
+"image": "https://images.unsplash.com/photo-1541849546-216549ae216d",
+"activities": ["CITY:Budapest","CITY:Debrecen","CITY:Szeged","PLACE:Buda Castle","PLACE:Parliament Building","PLACE:Fisherman's Bastion"]
+},
+{
+"name": "Iceland",
+"overview": "Volcanoes, waterfalls and dramatic nature.",
+"image": "https://images.unsplash.com/photo-1504893524553-b855bce32c67",
+"activities": ["CITY:Reykjavik","CITY:Akureyri","CITY:Selfoss","PLACE:Blue Lagoon","PLACE:Gullfoss","PLACE:Thingvellir National Park"]
+}
 ]
