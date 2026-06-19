@@ -2,24 +2,29 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { searchPlacesByDestination } from "../Services/itineraryService";
 
-function ItineraryBuilder({ trip }) {
+// 🚀 FIX: Destructured destinationName from parent parameters directly
+function ItineraryBuilder({ trip, destinationName }) {
   const [searchTextByDay, setSearchTextByDay] = useState({});
   const [suggestionsByDay, setSuggestionsByDay] = useState({});
   const [selectedPlacesByDay, setSelectedPlacesByDay] = useState({});
   const [loadingDay, setLoadingDay] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const destination = trip.destination || trip.destinationName;
+  // 🚀 FIX: Using verified safe property layer configurations first
+  const destination = destinationName || (trip.destination && typeof trip.destination === 'object'
+    ? trip.destination.name 
+    : (trip.destination || trip.destinationName || "Destination"));
+    
   const tripId = trip.id;
 
   // 🚀 FETCH EXISTING ITINERARY FROM FIRESTORE ON LOAD
   useEffect(() => {
     if (tripId) {
-      axios.get(`http://localhost:8080/api/travel/destinations/firestore`)
+      axios.get(`http://localhost:8080/api/travel/trips/firestore`)
         .then((res) => {
-          // Find the dynamic Firestore tracking object mapped to this trip
+          // 🚀 FIX: Secure structural and type conversions across data engines
           const matchedData = res.data.find(
-            d => d.tripId === tripId || d.name?.toLowerCase() === destination?.toLowerCase()
+            d => String(d.tripId) === String(tripId) || d.destinationName?.toLowerCase() === destination?.toLowerCase()
           );
           if (matchedData && matchedData.selectedPlacesByDay) {
             setSelectedPlacesByDay(matchedData.selectedPlacesByDay);
@@ -68,7 +73,6 @@ function ItineraryBuilder({ trip }) {
 
   // 🚀 SAVE ADDED PLACES STRAIGHT INTO FIRESTORE DOCUMENT TREES
   async function handleAddPlace(dayDate, place) {
-    // 1. Optimistically update local frontend state layout
     setSelectedPlacesByDay((prev) => {
       const currentPlaces = prev[dayDate] || [];
       const alreadyAdded = currentPlaces.some((item) => item.id === place.id);
@@ -80,30 +84,25 @@ function ItineraryBuilder({ trip }) {
       };
     });
 
-    // Clear search states immediately
     setSearchTextByDay((prev) => ({ ...prev, [dayDate]: "" }));
     setSuggestionsByDay((prev) => ({ ...prev, [dayDate]: [] }));
 
-    // 2. Dispatch payload to your Spring Boot Dual-Persistence controller endpoint
     try {
       setIsSaving(true);
-      
-      // This single API call sends the payload to the backend orchestration layer
       await axios.post(`http://localhost:8080/api/travel/trips/${tripId}/itinerary/save`, {
         tripId: tripId,
         destinationName: destination,
         activityName: place.name,
         activityAddress: place.address || "",
-        visitDate: dayDate, // maps to row entries in SQL and arrays in Firestore
+        visitDate: dayDate, 
         fullSelectedMap: {
           ...selectedPlacesByDay,
           [dayDate]: [...(selectedPlacesByDay[dayDate] || []), place]
         }
       });
-      
     } catch (err) {
       console.error("Multi-cloud transaction synchronization aborted:", err);
-      alert("Dual-Persistence synchronization failed. Data desynchronization risk detected.");
+      alert("Dual-Persistence synchronization failed.");
     } finally {
       setIsSaving(false);
     }
@@ -137,7 +136,6 @@ function ItineraryBuilder({ trip }) {
                 Day {day.dayNumber} - {day.date}
               </h5>
 
-              {/* Added Places Display */}
               {selectedPlaces.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {selectedPlaces.map((place) => (
@@ -149,12 +147,12 @@ function ItineraryBuilder({ trip }) {
                 </div>
               )}
 
-              {/* Dynamic Input Search Field */}
+              {/* 🚀 FIX: Corrected template literal variable wrapper from {} to ${} */}
               <input
                 type="text"
                 value={searchText}
                 onChange={(e) => handleSearch(day.date, e.target.value)}
-                placeholder={`Search places in {destination}...`}
+                placeholder={`Search places in ${destination}...`}
                 className="mt-4 w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
 
@@ -162,7 +160,6 @@ function ItineraryBuilder({ trip }) {
                 <p className="text-sm text-slate-500 mt-3 animate-pulse">Searching live locations maps...</p>
               )}
 
-              {/* Suggestions List Dropdown */}
               {suggestions.length > 0 && (
                 <div className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-1">
                   {suggestions.map((place) => (

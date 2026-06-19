@@ -2,25 +2,25 @@ import { useParams, useNavigate } from "react-router-dom";
 import ItineraryBuilder from "../components/ItineraryBuilder";
 
 function ItineraryDetails() {
-  const { tripId } = useParams();
+  const { tripId } = useParams(); // 🟢 Dynamically reads whatever ID is in the URL path
   const navigate = useNavigate();
 
   const savedTrips = localStorage.getItem("trips");
   const trips = savedTrips ? JSON.parse(savedTrips) : [];
 
-  // Match the active trip profile reference from cache structures
+  // 1. Dynamic route match finder
   const trip = trips.find((item) => 
-  String(item.id) === String(tripId) || String(item.tripId) === String(tripId)
-);
+    String(item.id) === String(tripId) || String(item.tripId) === String(tripId)
+  );
 
   if (!trip) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-16">
+      <main className="min-h-screen bg-slate-50 p-16 text-center">
         <section className="max-w-5xl mx-auto bg-white rounded-3xl shadow-sm p-10 text-center">
           <h1 className="text-3xl font-bold text-slate-900">Trip Not Found</h1>
           <p className="text-slate-500 mt-2">The selected itinerary session could not be tracked.</p>
-          <button
-            onClick={() => navigate("/trips")}
+          <button 
+            onClick={() => navigate("/trips")} 
             className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
           >
             Back to Trips
@@ -30,15 +30,16 @@ function ItineraryDetails() {
     );
   }
 
-  const destination = trip.destination && typeof trip.destination === 'object'
+  // 🚀 THE DYNAMIC EXTRACTOR: Resolves object structures safely for ANY trip ID
+  const destinationName = trip.destination && typeof trip.destination === 'object'
     ? trip.destination.name 
-    : (trip.destination || trip.destinationName || "European Destination");
+    : (trip.destinationName || trip.destination || "European Destination");
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-16">
       <section className="max-w-5xl mx-auto">
-        <button
-          onClick={() => navigate("/trips")}
+        <button 
+          onClick={() => navigate("/trips")} 
           className="mb-6 text-blue-600 font-semibold hover:underline flex items-center gap-1"
         >
           ← Back to Trips
@@ -46,7 +47,7 @@ function ItineraryDetails() {
 
         <div className="bg-white rounded-3xl shadow-sm p-8 border border-slate-100">
           <h1 className="text-4xl font-bold text-slate-900">
-            {destination} Itinerary
+            {destinationName} Itinerary
           </h1>
           <p className="text-slate-600 mt-3">📅 Timeline: {trip.startDate} to {trip.endDate}</p>
 
@@ -54,7 +55,7 @@ function ItineraryDetails() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 mb-8">
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
               <p className="text-sm text-slate-500 font-medium">Destination</p>
-              <p className="font-bold text-slate-900 mt-1 truncate">{destination}</p>
+              <p className="font-bold text-slate-900 mt-1 truncate">{destinationName}</p>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
@@ -77,8 +78,8 @@ function ItineraryDetails() {
             </div>
           </div>
 
-          {/* Direct Child Mount Injector passing live state handlers */}
-          <ItineraryBuilder trip={trip} destinationName={destination} />
+          {/* 🟢 Safely passing clean string representation down to child element */}
+          <ItineraryBuilder trip={trip} destinationName={destinationName} />
         </div>
       </section>
     </main>

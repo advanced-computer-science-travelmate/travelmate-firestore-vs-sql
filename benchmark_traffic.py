@@ -79,7 +79,7 @@ def process_benchmark_metrics(results):
 if __name__ == "__main__":
     # Settings: Send 50 trips altogether, making 10 requests concurrently at a time
     TOTAL_RECORDS = 50
-    CONCURRENCY_LIMIT = 10
+    CONCURRENCY_LIMIT = 20
     
     metrics_pool = asyncio.run(generate_traffic_pool(TOTAL_RECORDS, CONCURRENCY_LIMIT))
     process_benchmark_metrics(metrics_pool)

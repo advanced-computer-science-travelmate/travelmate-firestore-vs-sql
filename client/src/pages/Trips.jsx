@@ -124,11 +124,22 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   }
 
   function handleDeleteTrip(id) {
-    if (Array.isArray(trips)) {
-      const updatedTrips = trips.filter((trip) => trip.id !== id);
-      setTrips(updatedTrips);
-      localStorage.setItem("trips", JSON.stringify(updatedTrips));
-    }
+    // 1. Dispatch network deletion task straight to multi-cloud layer
+    axios.delete(`http://localhost:8080/api/travel/trips/${id}`)
+      .then(() => {
+        // 2. Filter local array state out dynamically on successful execution
+        setTrips((prevTrips) => {
+          const filtered = Array.isArray(prevTrips) ? prevTrips.filter((trip) => trip.id !== id) : [];
+          
+          // 3. Commit fresh subset mirror cleanly back into your localStorage pipeline
+          localStorage.setItem("trips", JSON.stringify(filtered));
+          return filtered;
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to delete trip record across backend infrastructure:", error);
+        alert("Could not complete absolute cloud storage deletion synchronization.");
+      });
   }
 
   // 🛑 GUARDRAIL 1: Show a pulse indicator while retrieving the persistent storage record
@@ -260,9 +271,13 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
 
                     <div>
                       <h3 className="text-2xl font-bold text-slate-900">
-                        {typeof trip.destination === 'object' && trip.destination !== null 
-                          ? trip.destination.name 
-                          : (trip.destination || trip.destinationName)}
+                        {(trip.image || (trip.destination && Array.isArray(trip.destination) && trip.destination[0]?.image)) && (
+                        <img 
+                          src={trip.image || trip.destination[0].image} 
+                          alt={trip.destinationName} 
+                          className="h-40 w-full object-cover rounded-2xl mb-4" 
+                        />
+                        )}
                       </h3>
                       <p className="text-slate-500 text-xs mt-1.5 font-medium">
                         📅 {trip.startDate} to {trip.endDate}
