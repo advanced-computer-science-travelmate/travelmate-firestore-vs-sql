@@ -6,6 +6,8 @@ public class TripDoc {
     private String startDate;
     private String endDate;
     private String userId;
+    private String countryFlag;
+    private String countryCode;
     
     private int maxTravelers;
     
@@ -44,6 +46,18 @@ public class TripDoc {
 	}
 	public void setMaxTravelers(int maxTravelers) {
 		this.maxTravelers = maxTravelers;
+	}
+	public String getCountryFlag() {
+		return countryFlag;
+	}
+	public void setCountryFlag(String countryFlag) {
+		this.countryFlag = countryFlag;
+	}
+	public String getCountryCode() {
+		return countryCode;
+	}
+	public void setCountryCode(String countryCode) {
+		this.countryCode = countryCode;
 	}
     
     

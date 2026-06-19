@@ -10,6 +10,7 @@ import DestinationDetails from "./pages/DestinationDetails";
 import Navbar from "./components/Navbar";
 import LoginModal from "./components/LoginModal";
 import ItineraryDetails from "./pages/ItineraryDetails";
+import HotelBooking from "./pages/HotelBooking";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -98,6 +99,7 @@ function App() {
             />
           }
         />
+        <Route path="/trips/:tripId/hotels" element={<HotelBooking />} />
       </Routes>
     </BrowserRouter>
   );

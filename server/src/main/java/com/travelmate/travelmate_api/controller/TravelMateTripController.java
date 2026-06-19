@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -47,56 +48,100 @@ public class TravelMateTripController {
         this.firestore = firestore;
     }
     
-    // 🟢 UNIFIED DUAL-WRITE CREATION (KEEP THIS - IT WRITES TO BOTH CLOUDS)
     @PostMapping("/create")
-    public ResponseEntity<?> createTrip(@RequestBody Map<String, Object> payload) throws Exception {
-        
-        // Extract parameters directly from the dynamic network payload
+    public ResponseEntity<?> createTrip(@RequestBody Map<String, Object> payload) {
         String destinationName = (String) payload.get("destinationName");
         String startDateStr = (String) payload.get("startDate");
         String endDateStr = (String) payload.get("endDate");
+        String passedUserId = (String) payload.get("userId");
         
-        // 1. Relational Integrity Query (Validates catalog state dynamically)
+        Integer maxTravelers = payload.get("maxTravelers") != null ? 
+                Integer.parseInt(payload.get("maxTravelers").toString()) : 2;
+
+        // Live API Handshake logic
+        String countryFlag = "🏳️"; 
+        String countryCode = "EU"; 
+        
+        final String finalCountryFlag = countryFlag;
+        try {
+            String url = "https://restcountries.com/v3.1/region/europe?fields=name,flags,cca2";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            
+            ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
+            List<Map<String, Object>> apiResponse = response.getBody();
+            
+            if (apiResponse != null) {
+                for (Map<String, Object> countryMap : apiResponse) {
+                    Map<String, Object> nameObj = (Map<String, Object>) countryMap.get("name");
+                    String commonName = (String) nameObj.get("common");
+                    
+                    if (commonName != null && commonName.equalsIgnoreCase(destinationName)) {
+                        countryCode = (String) countryMap.get("cca2");
+                        Map<String, Object> flagsObj = (Map<String, Object>) countryMap.get("flags");
+                        countryFlag = flagsObj != null ? (String) flagsObj.get("png") : "🏳️";
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("REST Countries proxy fallback triggered: " + e.getMessage());
+        }
+
+        // 1. RESOLVE OR SEED IN CLOUD SQL
         DestinationSQL foundCatalogDest = destinationSqlRepository.findAll().stream()
                 .filter(d -> d.getName().equalsIgnoreCase(destinationName))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Target destination context missing from active catalog mapping."));
-        
-        // 2. Map Relational Column State
+                .orElseGet(() -> {
+                    DestinationSQL newDest = new DestinationSQL();
+                    newDest.setName(destinationName);
+                    newDest.setImage(finalCountryFlag);
+                    return destinationSqlRepository.save(newDest);
+                });
+
         TripsSQL sqlTrip = new TripsSQL();
         sqlTrip.setStartDate(LocalDate.parse(startDateStr));
         sqlTrip.setEndDate(LocalDate.parse(endDateStr));
-        
-        // Dynamically safely extract whatever additional numeric variables are passed from the client
-        if (payload.containsKey("maxTravelers")) sqlTrip.setMaxTravelers((Integer) payload.get("maxTravelers"));
-        if (payload.containsKey("adults")) sqlTrip.setAdults((Integer) payload.get("adults"));
-        if (payload.containsKey("children")) sqlTrip.setChildren((Integer) payload.get("children"));
-        if (payload.containsKey("rooms")) sqlTrip.setRooms((Integer) payload.get("rooms"));
+        sqlTrip.setMaxTravelers(maxTravelers);
         
         sqlTrip.getDestination().add(foundCatalogDest);
         foundCatalogDest.setTrip(sqlTrip);
-        
-        // 3. Build Dynamic Non-Relational Document Node
-        TripDoc noSqlTrip = new TripDoc();
-        
-        String generatedId = "TRIP-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        noSqlTrip.setTripId(generatedId);
 
-        // Ensure your incoming payload map also carries this ID so it is stored in the document body
-        payload.put("tripId", generatedId);
-        
-        // Safely forward the incoming map straight to your service provider layer
-        // This allows your React application to completely dictate the embedded properties 
-        // (bookings, budgets, timelines) without modifying backend compiler rules.
-        TripsSQL savedSqlTrip = travelMateService.createTripInBothSystems(sqlTrip, noSqlTrip);
-        
-        // Update the live Firestore instance directly with the dynamic payload data map structure
-        firestore.collection("trips")
-                 .document(noSqlTrip.getTripId())
-                 .set(payload) // 🚀 FORWARDS RAW FRONTEND JSON MAP ENTIRELY
-                 .get();
-        
-        return ResponseEntity.ok(savedSqlTrip);
+        String generatedTripId = "TRIP-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        // 2. CONSTRUCT THE EXACT TRIPDOC INSTANCE EXPECTED BY THE SERVICE PARAMETER
+        TripDoc noSqlTrip = new TripDoc();
+        noSqlTrip.setTripId(generatedTripId);
+        noSqlTrip.setDestinationName(destinationName);
+        noSqlTrip.setStartDate(startDateStr);
+        noSqlTrip.setEndDate(endDateStr);
+        noSqlTrip.setUserId(passedUserId);
+
+        // 3. BIND DETAILED ATTRIBUTES TO A MAP FOR FIRESTORE SAVING 
+        Map<String, Object> firestorePayload = new HashMap<>(payload);
+        firestorePayload.put("tripId", generatedTripId);
+        firestorePayload.put("countryCode", countryCode);
+        firestorePayload.put("countryFlag", countryFlag);
+
+        try {
+            // 🟢 MATCHES SIGNATURE PERFECTLY: Passing (TripsSQL, TripDoc) without touching the service file
+            TripsSQL savedSqlTrip = travelMateService.createTripInBothSystems(sqlTrip, noSqlTrip);
+            
+            // Persist the complete map into Firestore directly
+            firestore.collection("trips")
+                     .document(generatedTripId)
+                     .set(firestorePayload)
+                     .get();
+            
+            return ResponseEntity.ok(savedSqlTrip);
+            
+        } catch (Exception e) {
+            System.err.println("Multi-Cloud write transaction failure: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Sync failure", "details", e.getMessage()));
+        }
     }
     
     @PostMapping("/seed")
@@ -149,7 +194,61 @@ public class TravelMateTripController {
         
         return ResponseEntity.ok(responseMetrics);
     }
+    
+    @GetMapping("/countries/list")
+    public ResponseEntity<List<Map<String, Object>>> getEuropeanCountriesCatalog() {
+        List<Map<String, Object>> countryCatalog = new ArrayList<>();
+        
+        try {
+            // 🚀 SECURE LIVE STREAM: Using a high-availability, open-source world country repository
+            String url = "https://raw.githubusercontent.com/mledoze/countries/master/countries.json";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            String rawJson = response.getBody();
+            
+            if (rawJson != null) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode rootNode = mapper.readTree(rawJson);
+                
+                if (rootNode.isArray()) {
+                    for (com.fasterxml.jackson.databind.JsonNode countryNode : rootNode) {
+                        // 🟢 Filter dynamically by Europe region on the fly!
+                        String region = countryNode.path("region").asText("");
+                        
+                        if ("Europe".equalsIgnoreCase(region)) {
+                            com.fasterxml.jackson.databind.JsonNode nameNode = countryNode.path("name");
+                            String commonName = nameNode.path("common").asText("");
+                            String cca2 = countryNode.path("cca2").asText("").toLowerCase(); // 🔥 FORCE LOWERCASE HERE
 
+                            if (!commonName.isEmpty() && !cca2.isEmpty()) {
+                                Map<String, Object> compactCountry = new HashMap<>();
+                                compactCountry.put("id", cca2.toUpperCase()); // Keep ID uppercase for standard display
+                                compactCountry.put("name", commonName);
+                                
+                                // 🟢 This guarantees the URL is completely lowercase (e.g., /w320/dk.png)
+                                compactCountry.put("image", "https://flagcdn.com/w320/" + cca2 + ".png");
+                                
+                                countryCatalog.add(compactCountry);
+                            }
+                        }
+                    }
+                }
+                
+                // Keep the sorting clean and alphabetical
+                countryCatalog.sort((a, b) -> ((String) a.get("name")).compareTo((String) b.get("name")));
+            }
+        } catch (Exception e) {
+            System.err.println("Live dynamic catalog sync exception: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return ResponseEntity.ok(countryCatalog);
+    }
+    
     // --- BENCHMARKING READ TARGETS ---
     @GetMapping("/sql")
     public ResponseEntity<List<TripsSQL>> getAllTripsSQL() {
@@ -249,5 +348,55 @@ public class TravelMateTripController {
         }
 
         return ResponseEntity.ok(metrics);
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteTripFromBothClouds(@PathVariable Long id) {
+        Map<String, Object> responseMetrics = new HashMap<>();
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // 1. Fetch matching SQL record using your existing repository instance
+            TripsSQL targetTrip = tripSqlRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Target trip execution id not found in Cloud SQL: " + id));
+
+            // 2. Clear from Cloud Firestore first using both common id patterns
+            // Since your app maps records using both numeric IDs and string lookups, 
+            // we will issue safe deletes for both to ensure Firestore is completely clean!
+            try {
+                // Delete document if it's named by the numeric SQL ID string (e.g., "71")
+                this.firestore.collection("trips").document(String.valueOf(id)).delete().get();
+                
+                // If your application saves Firestore entries by their destination name, clear that too
+                if (targetTrip.getDestination() != null && !targetTrip.getDestination().isEmpty()) {
+                    String destinationName = targetTrip.getDestination().get(0).getName();
+                    
+                    // Optional: Query and delete by destinationName field if your IDs are dynamic UUIDs
+                    this.firestore.collection("trips")
+                        .whereEqualTo("destinationName", destinationName)
+                        .get()
+                        .get()
+                        .getDocuments()
+                        .forEach(doc -> doc.getReference().delete());
+                }
+                
+                responseMetrics.put("firestoreDeleteStatus", "SUCCESS_OR_CLEANED");
+            } catch (Exception fe) {
+                System.err.println("Firestore node missing or unmapped, proceeding with SQL wipe: " + fe.getMessage());
+                responseMetrics.put("firestoreDeleteStatus", "SKIPPED_OR_EMPTY");
+            }
+
+            // 3. Clear from Cloud SQL
+            tripSqlRepository.deleteById(id);
+            responseMetrics.put("sqlDeleteStatus", "SUCCESS");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            responseMetrics.put("error", e.getMessage());
+            return ResponseEntity.internalServerError().body(responseMetrics);
+        }
+
+        responseMetrics.put("executionDurationMs", System.currentTimeMillis() - startTime);
+        return ResponseEntity.ok(responseMetrics);
     }
 }

@@ -1,39 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { destinationService } from "../services/destinationService";
 
-function Hero({ isLoggedIn, onLoginClick }) {
+function Hero({ 
+  isLoggedIn, 
+  onLoginClick, 
+  destinations, 
+  selectedDestination, 
+  setSelectedDestination, 
+  isLoadingDestinations, 
+  onSearchSubmit 
+}) {
   const navigate = useNavigate();
 
-  const [destinations, setDestinations] = useState([]);
-  const [selectedDestination, setSelectedDestination] = useState("");
+  // Keep only the states that Hero actually owns locally
   const [travelDate, setTravelDate] = useState("");
   const [travelers, setTravelers] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadDestinations() {
-      try {
-        const data = await destinationService.getEuropeanDestinations();
-        setDestinations(data);
-      } catch (error) {
-        console.error("Failed to load destinations:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDestinations();
-  }, []);
-
-  function handleFindTrips() {
-    if (!isLoggedIn) {
-      onLoginClick();
-      return;
-    }
-
-    navigate("/trips");
-  }
 
   return (
     <section className="relative overflow-hidden rounded-b-[32px] bg-gradient-to-br from-sky-100 via-blue-50 to-white">
@@ -47,70 +28,71 @@ function Hero({ isLoggedIn, onLoginClick }) {
           Your adventure awaits.
         </h1>
 
-        <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">
+        <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto mb-12">
           Create travel plans, manage itineraries, track expenses, and compare
           Firestore with Cloud SQL using a real full-stack application.
         </p>
 
-        <div className="mt-10 bg-white rounded-3xl shadow-xl max-w-4xl mx-auto p-4">
-          <div className="grid md:grid-cols-4 gap-3">
-            <div className="text-left px-4 py-3 rounded-2xl bg-slate-50">
-              <p className="text-xs font-semibold text-slate-500">
-                Destination
-              </p>
-
-              <select
-                value={selectedDestination}
-                onChange={(e) => setSelectedDestination(e.target.value)}
-                disabled={loading}
-                className="w-full bg-transparent outline-none text-slate-800 mt-1"
-              >
-                <option value="">
-                  {loading ? "Loading..." : "Where are you going?"}
-                </option>
-
-                {destinations.map((destination) => (
-                  <option key={destination.id} value={destination.name}>
-                    {destination.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="text-left px-4 py-3 rounded-2xl bg-slate-50">
-              <p className="text-xs font-semibold text-slate-500">Dates</p>
-
-              <input
-                type="date"
-                value={travelDate}
-                onChange={(e) => setTravelDate(e.target.value)}
-                className="w-full bg-transparent outline-none text-slate-800 mt-1"
-              />
-            </div>
-
-            <div className="text-left px-4 py-3 rounded-2xl bg-slate-50">
-              <p className="text-xs font-semibold text-slate-500">
-                Travelers
-              </p>
-
-              <input
-                type="number"
-                min="1"
-                value={travelers}
-                onChange={(e) => setTravelers(e.target.value)}
-                placeholder="2 guests"
-                className="w-full bg-transparent outline-none text-slate-800 mt-1"
-              />
-            </div>
-
-            <button
-              onClick={handleFindTrips}
-              className="bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition"
+        {/* 🚀 HORIZONTAL SEARCH WIDGET COHESIVE CONTAINMENT BAR */}
+        <div className="max-w-4xl mx-auto bg-white p-4 rounded-3xl shadow-md border border-slate-100 flex flex-col md:flex-row gap-4 items-center">
+          
+          {/* Destination Dropdown */}
+          <div className="flex-1 w-full text-left bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Destination
+            </label>
+            <select
+              value={selectedDestination}
+              onChange={(e) => setSelectedDestination(e.target.value)}
+              disabled={isLoadingDestinations}
+              className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none appearance-none cursor-pointer"
             >
-              Find Trips →
-            </button>
+              <option value="">{isLoadingDestinations ? "Loading countries..." : "Where are you going?"}</option>
+              {destinations.map((dest) => (
+                <option key={dest.id} value={dest.name} className="text-slate-900">
+                  {dest.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* Travel Date */}
+          <div className="flex-1 w-full text-left bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Dates
+            </label>
+            <input
+              type="date"
+              value={travelDate}
+              onChange={(e) => setTravelDate(e.target.value)}
+              className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none mt-0.5"
+            />
+          </div>
+
+          {/* Travelers Count */}
+          <div className="flex-1 w-full text-left bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Travelers
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={travelers}
+              onChange={(e) => setTravelers(e.target.value)}
+              placeholder="2 guests"
+              className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none mt-0.5"
+            />
+          </div>
+
+          {/* Submission Trigger Action Button */}
+          <button
+            onClick={onSearchSubmit}
+            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-2xl transition shadow-sm whitespace-nowrap self-stretch flex items-center justify-center"
+          >
+            Find Trips →
+          </button>
         </div>
+
       </div>
     </section>
   );

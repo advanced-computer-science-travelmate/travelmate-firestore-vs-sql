@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Navbar from "../components/Navbar";
-import { destinationService } from "../services/destinationService";
 import VotingPoll from "../components/VotingPoll";
-import HotelCards from "../components/HotelCards";
 
 function Trips({ isLoggedIn, onLogin, onLogout }) {
   const navigate = useNavigate();
   const [destinations, setDestinations] = useState([]);
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
   const [trips, setTrips] = useState([]);
-  const [isLoadingTrips, setIsLoadingTrips] = useState(true); // Set to true initially to prevent layout flash
+  const [isLoadingTrips, setIsLoadingTrips] = useState(true); 
   const [showForm, setShowForm] = useState(false);
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -20,7 +17,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [rooms, setRooms] = useState(1);
-  const [selectedHotelTripId, setSelectedHotelTripId] = useState(null);
+  const [countryCatalog, setCountryCatalog] = useState([]);
 
   const savedSession = localStorage.getItem("userSession");
   const userSession = savedSession ? JSON.parse(savedSession) : null;
@@ -28,14 +25,22 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
   
   const currentUserId = userSession ? userSession.noSqlId : "USER-ACTIVE-101";
 
-  // Load destinations once on mount
+  // 🚀 FIXED: Load real-time country collections straight from REST Countries API to feed the dropdown
   useEffect(() => {
     async function loadDestinations() {
       try {
-        const data = await destinationService.getEuropeanDestinations();
-        setDestinations(data);
+        const response = await axios.get(
+          "http://localhost:8080/api/travel/trips/countries/list"
+        );
+        setDestinations(response.data);
       } catch (error) {
-        console.error("Failed to load destinations:", error);
+        console.error("Failed to fetch custom country list via backend channel:", error);
+        // Fail-safe backup fallback stays right here
+        setDestinations([
+          { id: "SE", name: "Sweden", image: "https://flagcdn.com/w320/se.png" },
+          { id: "DE", name: "Germany", image: "https://flagcdn.com/w320/de.png" },
+          { id: "CH", name: "Switzerland", image: "https://flagcdn.com/w320/ch.png" }
+        ]);
       } finally {
         setIsLoadingDestinations(false);
       }
@@ -53,7 +58,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
           setTrips(response.data);
         })
         .catch((error) => {
-          System.err.println("Failed to load backend trips, using fallback storage:", error);
+          console.error("Failed to load backend trips, using fallback storage:", error);
           const localTrips = localStorage.getItem("trips");
           if (localTrips) setTrips(JSON.parse(localTrips));
         })
@@ -64,6 +69,14 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
       setIsLoadingTrips(false);
     }
   }, [activeSessionExists]);
+
+  useEffect(() => {
+  // Fetch your dynamic catalog so the cards can reference real codes/flags instantly
+  axios
+    .get("http://localhost:8080/api/travel/trips/countries/list")
+    .then((res) => setCountryCatalog(res.data || []))
+    .catch((err) => console.error("Catalog mapping down:", err));
+  }, []);
 
   function handleCreateTrip(e) {
     e.preventDefault();
@@ -87,51 +100,48 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
     axios
       .post("http://localhost:8080/api/travel/trips/create", tripPayload)
       .then((response) => {
-        // 🚀 FIXED: Read the real database structure returned from the Spring Boot backend!
         const savedDatabaseTrip = response.data;
 
+        // 🚀 SAFE EXTRACTOR: Drill into the backend relational array to find the saved flag URL string
+        const backendFlagUrl = savedDatabaseTrip.destination && Array.isArray(savedDatabaseTrip.destination) && savedDatabaseTrip.destination.length > 0
+          ? savedDatabaseTrip.destination[0].image
+          : (selectedDestination?.image || "");
+
         const realNewCard = {
-          id: savedDatabaseTrip.id || savedDatabaseTrip.tripId, // Use the real DB primary key
+          id: savedDatabaseTrip.id || savedDatabaseTrip.tripId, 
           destinationName: savedDatabaseTrip.destinationName || destination,
-          destination: savedDatabaseTrip.destination || destination, 
+          
+          // Ensure your relational structure matches what your map tracking rendering loops expect
+          destination: savedDatabaseTrip.destination || [{ name: destination, image: backendFlagUrl }], 
           startDate: savedDatabaseTrip.startDate || startDate,
           endDate: savedDatabaseTrip.endDate || endDate,
-          image: selectedDestination?.image || "",
+          
+          // 🟢 Fixes the broken image on immediate creation!
+          image: backendFlagUrl, 
+          
           bookings: savedDatabaseTrip.bookings || [], 
           adults: savedDatabaseTrip.adults || adults,
           children: savedDatabaseTrip.children || children,
           rooms: savedDatabaseTrip.rooms || rooms,
         };
 
-        // Maintain array structural consistency safely
         const updatedTrips = Array.isArray(trips) ? [...trips, realNewCard] : [realNewCard];
         setTrips(updatedTrips);
         localStorage.setItem("trips", JSON.stringify(updatedTrips));
 
-        // Clear states
+        // Clear input form fields
         setDestination("");
         setStartDate("");
         setEndDate("");
         setShowForm(false);
-        setAdults(1);
-        setChildren(0);
-        setRooms(1);
       })
-      .catch((error) => {
-        console.error("Multi-cloud transaction aborted:", error);
-        alert("Dual-Persistence write failure. Reverting layout state context rules.");
-      });
   }
 
   function handleDeleteTrip(id) {
-    // 1. Dispatch network deletion task straight to multi-cloud layer
     axios.delete(`http://localhost:8080/api/travel/trips/${id}`)
       .then(() => {
-        // 2. Filter local array state out dynamically on successful execution
         setTrips((prevTrips) => {
           const filtered = Array.isArray(prevTrips) ? prevTrips.filter((trip) => trip.id !== id) : [];
-          
-          // 3. Commit fresh subset mirror cleanly back into your localStorage pipeline
           localStorage.setItem("trips", JSON.stringify(filtered));
           return filtered;
         });
@@ -142,7 +152,6 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
       });
   }
 
-  // 🛑 GUARDRAIL 1: Show a pulse indicator while retrieving the persistent storage record
   if (isLoadingTrips) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -153,7 +162,6 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
     );
   }
 
-  // 🛑 GUARDRAIL 2: If validation has completed and user is missing, intercept with the Login window
   if (!activeSessionExists) {
     return (
       <main className="min-h-screen bg-slate-50 px-6 py-16 flex items-center justify-center">
@@ -161,7 +169,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
           <h1 className="text-3xl font-bold text-slate-900">Login to plan a trip</h1>
           <p className="text-slate-600 mt-4">Please log in to your account to create and manage your cloud travel itineraries.</p>
           <button
-            onClick={() => navigate("/")} // Assuming your route path to Login.jsx is "/"
+            onClick={() => navigate("/")} 
             className="mt-8 w-full bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm"
           >
             Go to Login
@@ -171,7 +179,6 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
     );
   }
 
-  // 🟢 RUNNING STATE: Mount user layout grid safely once authentication context is resolved
   return (
     <>
       <main className="min-h-screen bg-slate-50 px-6 py-16">
@@ -261,24 +268,45 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
               {trips.map((trip) => (
                 <div key={trip.id} className="bg-white rounded-3xl shadow-sm overflow-hidden flex flex-col justify-between border border-slate-100 p-6">
                   <div>
-                    {(trip.image || (trip.destination && trip.destination.image)) && (
+                    {(trip.image || (trip.destination && Array.isArray(trip.destination) && trip.destination.length > 0 && trip.destination[0]?.image)) && (
                       <img 
-                        src={trip.image || trip.destination.image} 
-                        alt={trip.destinationName} 
-                        className="h-40 w-full object-cover rounded-2xl mb-4" 
+                        src={(() => {
+                          // 1. If the trip object already has a valid live image path link, use it directly
+                          if (trip.image && trip.image.includes("http")) return trip.image;
+                          if (trip.destination && Array.isArray(trip.destination) && trip.destination[0]?.image) {
+                            return trip.destination[0].image;
+                          }
+
+                          // 2. 🚀 LOOKUP ENGINE: Find the country in our live backend catalog list
+                          const matchedCountry = countryCatalog.find(
+                            (c) => c.name.toLowerCase() === (trip.destinationName || "").toLowerCase()
+                          );
+
+                          // 3. Return the verified flag CDN URL or fall back to a clean default continent asset layout
+                          return matchedCountry && matchedCountry.image
+                            ? matchedCountry.image
+                            : `https://flagcdn.com/w320/eu.png`; // Fallback to European Union flag instead of map image
+                        })()} 
+                        alt={trip.destinationName || "Destination Banner"} 
+                        className="h-40 w-full object-cover rounded-2xl mb-4 border border-slate-100 shadow-2xs" 
+                        onError={(e) => {
+                          // If everything fails, show the EU flag as a clean default placeholder
+                          if (e.target.src !== "https://flagcdn.com/w320/eu.png") {
+                            e.target.src = "https://flagcdn.com/w320/eu.png";
+                          }
+                        }}
                       />
                     )}
 
                     <div>
                       <h3 className="text-2xl font-bold text-slate-900">
-                        {(trip.image || (trip.destination && Array.isArray(trip.destination) && trip.destination[0]?.image)) && (
-                        <img 
-                          src={trip.image || trip.destination[0].image} 
-                          alt={trip.destinationName} 
-                          className="h-40 w-full object-cover rounded-2xl mb-4" 
-                        />
-                        )}
+                        {trip.destination && Array.isArray(trip.destination) && trip.destination.length > 0
+                          ? trip.destination[0].name
+                          : (typeof trip.destination === 'object' && trip.destination !== null 
+                              ? trip.destination.name 
+                              : (trip.destinationName || trip.destination || "Destination"))}
                       </h3>
+                      
                       <p className="text-slate-500 text-xs mt-1.5 font-medium">
                         📅 {trip.startDate} to {trip.endDate}
                       </p>
@@ -324,7 +352,7 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                       </button>
 
                       <button
-                        onClick={() => setSelectedHotelTripId(selectedHotelTripId === trip.id ? null : trip.id)}
+                        onClick={() => navigate(`/trips/${trip.id}/hotels`)}
                         className="border border-green-600 text-green-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-green-50 transition flex-1 text-center"
                       >
                         Book Hotels
@@ -337,12 +365,6 @@ function Trips({ isLoggedIn, onLogin, onLogout }) {
                         Delete
                       </button>
                     </div>
-
-                    {selectedHotelTripId === trip.id && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <HotelCards destination={trip.destination || trip.destinationName} />
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

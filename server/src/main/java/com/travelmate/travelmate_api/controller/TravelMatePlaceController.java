@@ -9,7 +9,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/places")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174"})
+@CrossOrigin(origins = {"http://localhost:5173"})
 public class TravelMatePlaceController {
 
     @Value("${google.places.api.key}")
