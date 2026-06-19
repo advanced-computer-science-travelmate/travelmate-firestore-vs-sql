@@ -29,7 +29,7 @@ import com.travelmate.travelmate_api.service.TravelMateService;
 
 @RestController
 @RequestMapping("/api/travel/trips")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", allowCredentials = "true")
 public class TravelMateTripController {
 
     private final TripSQLRepository tripSqlRepository;
